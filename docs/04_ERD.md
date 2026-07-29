@@ -1,0 +1,393 @@
+# Jexon ERD 설계
+
+## 1. 엔티티 목록
+- Member
+- Post
+- Comment
+- News
+- GameVersion
+- GameFile
+- DownloadHistory
+
+---
+
+## 2. 관계 요약
+- Member 1:N Post
+- Member 1:N Comment
+- Post 1:N Comment
+- GameVersion 1:1 GameFile
+- GameVersion 1:N News
+- GameVersion 1:N DownloadHistory
+- Member 1:N DownloadHistory
+
+News와 Member를 연결하여 작성 관리자를 저장할 수 있다.
+- Member 1:N News
+
+DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때문에 선택 관계다.
+
+---
+
+## 3. Member
+
+### 테이블명
+
+`members`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 회원 식별자 |
+| login_id | VARCHAR(20) | N | UNIQUE | 로그인 아이디 |
+| password | VARCHAR(255) | N |  | 암호화된 비밀번호 |
+| nickname | VARCHAR(20) | N | UNIQUE | 닉네임 |
+| email | VARCHAR(100) | N | UNIQUE | 이메일 |
+| role | VARCHAR(20) | N |  | USER, ADMIN |
+| status | VARCHAR(20) | N |  | ACTIVE, SUSPENDED, WITHDRAWN |
+| created_at | DATETIME | N |  | 생성일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### Enum
+
+#### MemberRole
+- USER
+- ADMIN
+
+#### MemberStatus
+- ACTIVE
+- SUSPENDED
+- WITHDRAWN
+
+### 제약조건
+- login_id UNIQUE
+- nickname UNIQUE
+- email UNIQUE
+
+---
+
+## 4. Post
+
+### 테이블명
+
+`posts`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 게시글 식별자 |
+| member_id | BIGINT | N | FK | 작성자 |
+| title | VARCHAR(100) | N |  | 제목 |
+| content | TEXT | N |  | 내용 |
+| view_count | BIGINT | N | DEFAULT 0 | 조회 수 |
+| created_at | DATETIME | N |  | 작성일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### 관계
+- Member N:1 Post
+- Post 1:N Comment
+
+### 인덱스
+- member_id
+- created_at
+- title
+
+---
+
+## 5. Comment
+
+### 테이블명
+
+`comments`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 댓글 식별자 |
+| post_id | BIGINT | N | FK | 게시글 |
+| member_id | BIGINT | N | FK | 작성자 |
+| content | VARCHAR(1000) | N |  | 댓글 내용 |
+| created_at | DATETIME | N |  | 작성일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### 관계
+- Post N:1 Comment
+- Member N:1 Comment
+
+### 인덱스
+- post_id
+- member_id
+- created_at
+
+---
+
+## 6. News
+
+### 테이블명
+
+`news`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 새소식 식별자 |
+| writer_id | BIGINT | N | FK | 작성 관리자 |
+| game_version_id | BIGINT | Y | FK | 연결 게임 버전 |
+| type | VARCHAR(20) | N |  | NOTICE, PATCH_NOTE, EVENT |
+| title | VARCHAR(150) | N |  | 제목 |
+| content | TEXT | N |  | 내용 |
+| created_at | DATETIME | N |  | 작성일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### Enum
+
+#### NewsType
+- NOTICE
+- PATCH_NOTE
+- EVENT
+
+### 관계
+- Member N:1 News
+- GameVersion 1:N News
+- game_version_id는 NULL을 허용한다.
+
+### 인덱스
+- type
+- game_version_id
+- created_at
+
+---
+
+## 7. GameVersion
+
+### 테이블명
+
+`game_versions`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 버전 식별자 |
+| version | VARCHAR(30) | N | UNIQUE | 버전 번호 |
+| title | VARCHAR(100) | N |  | 버전 제목 |
+| description | VARCHAR(500) | Y |  | 버전 설명 |
+| status | VARCHAR(20) | N |  | DRAFT, RELEASED, INACTIVE |
+| released_at | DATETIME | Y |  | 실제 배포 일시 |
+| created_at | DATETIME | N |  | 등록일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### Enum
+
+#### GameVersionStatus
+- DRAFT
+- RELEASED
+- INACTIVE
+
+### 관계
+- GameVersion 1:1 GameFile
+- GameVersion 1:N News
+- GameVersion 1:N DownloadHistory
+
+### 제약조건
+- version UNIQUE
+- RELEASED 상태는 애플리케이션 정책상 최대 하나만 허용한다.
+
+### 인덱스
+- version
+- status
+- released_at
+
+---
+
+## 8. GameFile
+
+### 테이블명
+
+`game_files`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 파일 식별자 |
+| game_version_id | BIGINT | N | FK, UNIQUE | 연결 게임 버전 |
+| original_name | VARCHAR(255) | N |  | 원본 파일명 |
+| stored_name | VARCHAR(255) | N | UNIQUE | UUID 저장 파일명 |
+| storage_path | VARCHAR(500) | N |  | 내부 저장 경로 |
+| extension | VARCHAR(20) | N |  | 파일 확장자 |
+| file_size | BIGINT | N |  | 파일 크기(byte) |
+| checksum | VARCHAR(64) | N |  | SHA-256 |
+| created_at | DATETIME | N |  | 업로드 일시 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### 관계
+- GameVersion 1:1 GameFile
+
+### 제약조건
+- game_version_id UNIQUE
+- stored_name UNIQUE
+- 한 게임 버전에는 하나의 파일만 연결된다.
+
+### 보안 정책
+- storage_path는 사용자 API 응답에 포함하지 않는다.
+- stored_name은 사용자 API 응답에 포함하지 않는다.
+
+---
+
+## 9. DownloadHistory
+
+### 테이블명
+
+`download_histories`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, AUTO_INCREMENT | 다운로드 이력 식별자 |
+| game_version_id | BIGINT | N | FK | 다운로드 버전 |
+| member_id | BIGINT | Y | FK | 로그인 회원, 비회원은 NULL |
+| downloaded_at | DATETIME | N |  | 다운로드 시작 일시 |
+
+### 관계
+- GameVersion N:1 DownloadHistory
+- Member N:1 DownloadHistory
+- member_id는 NULL을 허용한다.
+
+### 인덱스
+- game_version_id
+- member_id
+- downloaded_at
+- `(game_version_id, downloaded_at)` 복합 인덱스 검토
+
+---
+
+## 10. 공통 시간 컬럼
+다음 엔티티는 생성일과 수정일을 가진다.
+
+- Member
+- Post
+- Comment
+- News
+- GameVersion
+- GameFile
+
+JPA Auditing을 사용한다.
+
+DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용한다.
+
+---
+
+## 11. 삭제 정책
+
+### Member
+초기 MVP에서는 회원 탈퇴 API를 구현하지 않는다.
+
+향후 탈퇴 기능을 추가할 경우 데이터 삭제보다 `WITHDRAWN` 상태 변경을 우선 검토한다.
+
+### Post 및 Comment
+초기 MVP에서는 실제 삭제한다.
+
+향후 운영 이력 보존이 필요하면 논리 삭제로 변경한다.
+
+### News
+관리자가 실제 삭제한다.
+
+### GameVersion 및 GameFile
+- RELEASED 버전은 삭제할 수 없다.
+- 다운로드 이력이 있는 버전은 삭제하지 않는다.
+- DRAFT 상태이며 다운로드 이력이 없는 버전만 삭제 가능하도록 검토한다.
+- 실제 파일 삭제와 DB 삭제의 실패 처리 정책이 필요하다.
+
+### DownloadHistory
+통계 원본 데이터이므로 관리자 화면에서 삭제 기능을 제공하지 않는다.
+
+---
+
+## 12. Mermaid ERD
+
+```mermaid
+erDiagram
+    MEMBER ||--o{ POST : writes
+    MEMBER ||--o{ COMMENT : writes
+    MEMBER ||--o{ NEWS : creates
+    MEMBER o|--o{ DOWNLOAD_HISTORY : downloads
+
+    POST ||--o{ COMMENT : has
+
+    GAME_VERSION ||--o| GAME_FILE : contains
+    GAME_VERSION ||--o{ NEWS : linked_to
+    GAME_VERSION ||--o{ DOWNLOAD_HISTORY : recorded_for
+
+    MEMBER {
+        BIGINT id PK
+        VARCHAR login_id UK
+        VARCHAR password
+        VARCHAR nickname UK
+        VARCHAR email UK
+        VARCHAR role
+        VARCHAR status
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    POST {
+        BIGINT id PK
+        BIGINT member_id FK
+        VARCHAR title
+        TEXT content
+        BIGINT view_count
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    COMMENT {
+        BIGINT id PK
+        BIGINT post_id FK
+        BIGINT member_id FK
+        VARCHAR content
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    NEWS {
+        BIGINT id PK
+        BIGINT writer_id FK
+        BIGINT game_version_id FK
+        VARCHAR type
+        VARCHAR title
+        TEXT content
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    GAME_VERSION {
+        BIGINT id PK
+        VARCHAR version UK
+        VARCHAR title
+        VARCHAR description
+        VARCHAR status
+        DATETIME released_at
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    GAME_FILE {
+        BIGINT id PK
+        BIGINT game_version_id FK,UK
+        VARCHAR original_name
+        VARCHAR stored_name UK
+        VARCHAR storage_path
+        VARCHAR extension
+        BIGINT file_size
+        VARCHAR checksum
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    DOWNLOAD_HISTORY {
+        BIGINT id PK
+        BIGINT game_version_id FK
+        BIGINT member_id FK
+        DATETIME downloaded_at
+    }
+```
+
+---
+
+## 13. 구현 전 확인 사항
+- Member와 News 작성자 관계 유지 여부
+- 게시글 조회 수 동시 증가 방식
+- RELEASED 상태 하나를 보장하는 트랜잭션
+- GameVersion 삭제 허용 범위
+- GameFile 삭제 실패 시 처리 방식
+- DownloadHistory IP 및 User-Agent 추가 여부
