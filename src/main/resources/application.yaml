@@ -1,3 +1,8 @@
+## 공통 설정
+
 spring:
   application:
     name: jexon
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
