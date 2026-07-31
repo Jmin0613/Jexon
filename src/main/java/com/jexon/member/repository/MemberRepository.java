@@ -1,4 +1,18 @@
-package com.jexon.member;
+package com.jexon.member.repository;
 
-public class MemberRepository {
+import com.jexon.member.domain.Member;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface MemberRepository extends JpaRepository<Member, Long> {
+    // 로그인
+    Optional<Member> findByLoginId(String loginId);
+
+    // 회원가입 중복 검사용
+    boolean existsByLoginId(String loginId);
+    boolean existsByNickname(String nickname);
+    boolean existsByEmail(String email);
+    boolean existsByPhoneNumber(String phoneNumber);
+
 }
