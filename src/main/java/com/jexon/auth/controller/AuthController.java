@@ -32,5 +32,7 @@ public class AuthController {
     }
 
     // 로그아웃
+    // Spring Security 필터가 처리
+
 
 }
