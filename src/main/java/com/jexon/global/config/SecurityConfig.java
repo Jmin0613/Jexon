@@ -30,9 +30,16 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // 비로그인 접근 허용
                         .requestMatchers(
                                 "/api/members/signup", "/api/auth/login"
                         ).permitAll()
+
+                        // 관리자 전용
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        // 그 외 요청은 로그인 필요
                         .anyRequest().authenticated()
                 )
                 .logout(logout -> logout
