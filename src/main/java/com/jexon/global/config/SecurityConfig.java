@@ -1,6 +1,8 @@
 package com.jexon.global.config;
 
 import com.jexon.auth.service.CustomUserDetailsService;
+import com.jexon.global.security.CustomAccessDeniedHandler;
+import com.jexon.global.security.CustomAuthenticationEntryPoint;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +21,8 @@ import org.springframework.security.web.context.SecurityContextRepository;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -42,6 +46,13 @@ public class SecurityConfig {
                         // 그 외 요청은 로그인 필요
                         .anyRequest().authenticated()
                 )
+
+                // 로그인 접근 처리 및 권한 부족
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
+                )
+
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .invalidateHttpSession(true)
