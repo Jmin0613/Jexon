@@ -1,10 +1,7 @@
 package com.jexon.member.controller;
 
-import com.jexon.member.dto.LoginRequest;
-import com.jexon.member.dto.SignupRequest;
+import com.jexon.member.dto.request.SignupRequest;
 import com.jexon.member.service.MemberService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.jexon.member.dto;
+package com.jexon.auth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;

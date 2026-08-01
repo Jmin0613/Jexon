@@ -1,6 +1,6 @@
 package com.jexon.auth.service;
 
-import com.jexon.member.dto.LoginRequest;
+import com.jexon.auth.dto.request.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

@@ -59,10 +59,6 @@ public class CustomUserDetails implements UserDetails {
         return member.getStatus() != MemberStatus.WITHDRAWN;
     }
 
-    public Long getMemberIId(){
-        return member.getId();
-    }
-
     public Long getMemberId() {
         return member.getId();
     }

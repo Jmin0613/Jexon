@@ -2,9 +2,10 @@ package com.jexon.auth.controller;
 
 import com.jexon.auth.principal.CustomUserDetails;
 import com.jexon.auth.service.AuthService;
-import com.jexon.member.dto.LoginRequest;
+import com.jexon.auth.dto.request.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +26,7 @@ public class AuthController {
     // 로그인
     @PostMapping("/login")
     public ResponseEntity<Void> login(
-            @RequestBody LoginRequest request,
+            @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest, HttpServletResponse httpResponse){
         authService.login(request, httpRequest, httpResponse);
         return ResponseEntity.ok().build();

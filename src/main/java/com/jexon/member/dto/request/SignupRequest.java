@@ -1,4 +1,4 @@
-package com.jexon.member.dto;
+package com.jexon.member.dto.request;
 
 import com.jexon.global.validation.LoginIdValidator;
 import com.jexon.global.validation.PasswordValidator;
