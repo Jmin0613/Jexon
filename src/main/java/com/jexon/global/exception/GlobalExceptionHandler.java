@@ -1,6 +1,8 @@
 package com.jexon.global.exception;
 
 import com.jexon.global.exception.dto.ErrorResponse;
+import com.jexon.post.exception.PostNotFoundException;
+import com.jexon.post.exception.PostPermissionDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,5 +20,27 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    // 게시글을 찾을 수 없음
+    @ExceptionHandler(PostNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePostNotFound(PostNotFoundException exception){
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    // 게시글 권한 부족
+    @ExceptionHandler(PostPermissionDeniedException.class)
+    public ResponseEntity<ErrorResponse> handlePostPermissionDenied(PostPermissionDeniedException exception){
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 }

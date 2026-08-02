@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -37,6 +38,11 @@ public class SecurityConfig {
                         // 비로그인 접근 허용
                         .requestMatchers(
                                 "/api/members/signup", "/api/auth/login"
+                        ).permitAll()
+
+                        // 게시글 조회 허용
+                        .requestMatchers(
+                                HttpMethod.GET, "/api/posts", "/api/posts/**"
                         ).permitAll()
 
                         // 관리자 전용
