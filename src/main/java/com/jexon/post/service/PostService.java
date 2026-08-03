@@ -1,5 +1,6 @@
 package com.jexon.post.service;
 
+import com.jexon.comment.repository.CommentRepository;
 import com.jexon.member.domain.Member;
 import com.jexon.member.domain.MemberRole;
 import com.jexon.member.domain.MemberStatus;
@@ -29,6 +30,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final CommentRepository commentRepository;
 
     @Transactional
     public PostCreateResponse create(Long memberId, PostCreateRequest request) {
@@ -84,6 +86,7 @@ public class PostService {
         validateActiveMember(requester, deniedMessage);
         validateDeletePermission(post, requester);
 
+        commentRepository.deleteAllByPostId(postId);
         postRepository.delete(post);
     }
 

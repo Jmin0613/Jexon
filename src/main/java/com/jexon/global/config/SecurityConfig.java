@@ -40,7 +40,7 @@ public class SecurityConfig {
                                 "/api/members/signup", "/api/auth/login"
                         ).permitAll()
 
-                        // 게시글 조회 허용
+                        // 게시글 및 게시글별 댓글 조회 허용
                         .requestMatchers(
                                 HttpMethod.GET, "/api/posts", "/api/posts/**"
                         ).permitAll()
