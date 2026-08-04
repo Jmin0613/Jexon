@@ -16,11 +16,8 @@
 - Member 1:N Comment
 - Post 1:N Comment
 - GameVersion 1:1 GameFile
-- GameVersion 1:N News
 - GameVersion 1:N DownloadHistory
 - Member 1:N DownloadHistory
-
-News와 Member를 연결하여 작성 관리자를 저장할 수 있다.
 - Member 1:N News
 
 DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때문에 선택 관계다.
@@ -126,7 +123,6 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 |---|---|---:|---|---|
 | id | BIGINT | N | PK, AUTO_INCREMENT | 새소식 식별자 |
 | writer_id | BIGINT | N | FK | 작성 관리자 |
-| game_version_id | BIGINT | Y | FK | 연결 게임 버전 |
 | type | VARCHAR(20) | N |  | NOTICE, PATCH_NOTE, EVENT |
 | title | VARCHAR(150) | N |  | 제목 |
 | content | TEXT | N |  | 내용 |
@@ -141,14 +137,13 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 - EVENT
 
 ### 관계
-- Member N:1 News
-- GameVersion 1:N News
-- game_version_id는 NULL을 허용한다.
+- News N:1 Member
+- `writer_id`는 NULL을 허용하지 않는다.
+- 작성 관리자는 LAZY ManyToOne 관계로 저장한다.
+- 현재 News는 GameVersion과 관계를 맺지 않는다.
 
 ### 인덱스
-- type
-- game_version_id
-- created_at
+- 현재 Entity에 별도 인덱스를 선언하지 않는다.
 
 ---
 
@@ -305,7 +300,6 @@ erDiagram
     POST ||--o{ COMMENT : has
 
     GAME_VERSION ||--o| GAME_FILE : contains
-    GAME_VERSION ||--o{ NEWS : linked_to
     GAME_VERSION ||--o{ DOWNLOAD_HISTORY : recorded_for
 
     MEMBER {
@@ -342,7 +336,6 @@ erDiagram
     NEWS {
         BIGINT id PK
         BIGINT writer_id FK
-        BIGINT game_version_id FK
         VARCHAR type
         VARCHAR title
         TEXT content
@@ -385,7 +378,6 @@ erDiagram
 ---
 
 ## 13. 구현 전 확인 사항
-- Member와 News 작성자 관계 유지 여부
 - 게시글 조회 수 동시 증가 방식
 - RELEASED 상태 하나를 보장하는 트랜잭션
 - GameVersion 삭제 허용 범위

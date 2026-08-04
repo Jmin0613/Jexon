@@ -346,29 +346,33 @@ Error
 ## 5. 새소식 사용자 API
 
 ### 새소식 목록 조회
-Request  `GET /api/news`
+
+권한: 비회원 포함 전체 사용자
+
+Request `GET /api/news`
 
 Query Parameters
 
 | 이름      | 필수 | 기본값 | 설명                        |
 | ------- | -: | --: | ------------------------- |
 | page    |  N |   0 | 페이지 번호                    |
-| size    |  N |  20 | 페이지 크기                    |
+| size    |  N |  20 | 페이지 크기, 최대 100             |
 | type    |  N |     | NOTICE, PATCH_NOTE, EVENT |
 | keyword |  N |     | 제목 검색                     |
 
-Response  `200 OK`
+정렬은 `createdAt DESC`, `id DESC`로 고정하며 요청의 sort 조건은 사용하지 않는다.
+keyword가 NULL 또는 공백이면 제목 검색 조건을 적용하지 않는다.
+
+Response `200 OK`
 ```json
 {
-"content": [
-    {
-        "newsId": 1,
-        "type": "PATCH_NOTE",
-        "title": "1.1.0 업데이트",
-        "versionId": 2,
-        "version": "1.1.0",
-        "createdAt": "2026-07-29T14:30:00"
-    }
+    "content": [
+        {
+            "newsId": 1,
+            "type": "PATCH_NOTE",
+            "title": "1.1.0 업데이트",
+            "createdAt": "2026-07-29T14:30:00"
+        }
     ],
     "page": 0,
     "size": 20,
@@ -381,19 +385,17 @@ Response  `200 OK`
 
 ### 새소식 상세 조회
 
-Request  `GET /api/news/{newsId}`
+권한: 비회원 포함 전체 사용자
 
-Response  `200 OK`
+Request `GET /api/news/{newsId}`
+
+Response `200 OK`
 ```json
 {
     "newsId": 1,
     "type": "PATCH_NOTE",
     "title": "1.1.0 업데이트",
     "content": "업데이트 내용",
-    "version": {
-        "versionId": 2,
-      "version": "1.1.0"
-    },
     "createdAt": "2026-07-29T14:30:00",
     "updatedAt": "2026-07-29T14:30:00"
 }
@@ -536,53 +538,79 @@ Error
 
 ### 새소식 등록
 
-Request  `POST /api/admin/news`
+권한: ACTIVE 상태의 ADMIN
+
+Request `POST /api/admin/news`
 ```json
 {
     "type": "PATCH_NOTE",
     "title": "1.1.0 업데이트",
-    "content": "업데이트 내용",
-    "gameVersionId": 2
+    "content": "업데이트 내용"
 }
 ```
 
 Response `201 Created`
 ```json
 {
-"newsId": 1
+    "newsId": 1
+}
+```
+
+Location 헤더는 반환하지 않는다.
+
+Error
+- 400: 입력값 검증 실패
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+
+### 새소식 수정
+
+권한: ACTIVE 상태의 ADMIN
+
+작성자 일치 여부를 검사하지 않으며, 다른 관리자가 수정해도 최초 writer를 유지한다.
+
+Request `PUT /api/admin/news/{newsId}`
+```json
+{
+    "type": "PATCH_NOTE",
+    "title": "수정된 제목",
+    "content": "수정된 내용"
+}
+```
+
+Response `200 OK`
+```json
+{
+    "newsId": 1,
+    "type": "PATCH_NOTE",
+    "title": "수정된 제목",
+    "content": "수정된 내용",
+    "createdAt": "2026-07-29T14:30:00",
+    "updatedAt": "2026-07-29T16:00:00"
 }
 ```
 
 Error
 - 400: 입력값 검증 실패
-- 403: 관리자 권한 없음
-- 404: 연결 게임 버전 없음
-
-### 새소식 수정
-
-Request  `PUT /api/admin/news/{newsId}`
-```json
-{
-    "type": "PATCH_NOTE",
-    "title": "수정된 제목",
-    "content": "수정된 내용",
-    "gameVersionId": 2
-}
-```
-
-Response  `200 OK`
-```json
-{
-"newsId": 1,
-"updatedAt": "2026-07-29T16:00:00"
-}
-```
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+- 404: 새소식 없음
 
 ### 새소식 삭제
 
-Request  `DELETE /api/admin/news/{newsId}`
+권한: ACTIVE 상태의 ADMIN
 
-Response  `204 No Content`
+작성자 일치 여부를 검사하지 않는다.
+
+Request `DELETE /api/admin/news/{newsId}`
+
+Response `204 No Content`
+응답 본문 없음
+
+Error
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+- 404: 새소식 없음
 
 ## 9. 관리자 게임 버전 API
 

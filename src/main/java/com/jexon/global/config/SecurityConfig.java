@@ -45,6 +45,11 @@ public class SecurityConfig {
                                 HttpMethod.GET, "/api/posts", "/api/posts/**"
                         ).permitAll()
 
+                        // 새소식 조회 허용
+                        .requestMatchers(
+                                HttpMethod.GET, "/api/news", "/api/news/**"
+                        ).permitAll()
+
                         // 관리자 전용
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")
