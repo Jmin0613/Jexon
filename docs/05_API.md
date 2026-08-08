@@ -410,6 +410,8 @@ Error
 
 ### 최신 버전 정보 조회
 
+구현 예정: GameFile 연결 이후 최종 응답 계약과 함께 구현한다.
+
 Request  `GET /api/game/versions/latest`
 
 Response  `200 OK`
@@ -417,7 +419,7 @@ Response  `200 OK`
 ```json
 {
     "versionId": 2,
-    "version": "1.1.0",
+    "version": "v1.1.0",
     "title": "정식 업데이트",
     "description": "신규 콘텐츠가 추가되었습니다.",
     "releasedAt": "2026-07-29T14:30:00",
@@ -434,6 +436,8 @@ Error
 - 404: 연결된 파일 없음
 
 ### 최신 버전 다운로드
+
+구현 예정: GameFile 및 다운로드 기능 구현 이후 제공한다.
 
 Request  `GET /api/downloads/latest`
 
@@ -618,9 +622,9 @@ Error
 Request  `POST /api/admin/game-versions`
 ```json
 {
-    "version": "1.1.0",
-    "title": "정식 업데이트",
-    "description": "신규 콘텐츠가 추가되었습니다."
+    "version": "v1.1.0",
+    "title": "Jexon 정식 업데이트 버전",
+    "description": "신규 콘텐츠가 추가된 Jexon 정식 업데이트 버전입니다."
 }
 ```
 
@@ -628,15 +632,21 @@ Response  `201 Created`
 ```json
 {
     "gameVersionId": 2,
-    "version": "1.1.0",
+    "version": "v1.1.0",
     "status": "DRAFT"
 }
 ```
 
 Error
 - 400: 입력값 검증 실패
-- 403: 관리자 권한 없음
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
 - 409: 버전 번호 중복
+
+Validation
+- version: `^v\d+\.\d+\.\d+$`, 최대 30자
+- title: 10자 이상 100자 이하
+- description: 10자 이상 500자 이하
 
 ### 관리자 게임 버전 목록
 
@@ -650,16 +660,18 @@ Query Parameters
 | size   |  N |  20 | 페이지 크기                    |
 | status |  N |     | DRAFT, RELEASED, INACTIVE |
 
+페이지 크기는 최대 100이며 정렬은 `createdAt DESC`, `id DESC`로 고정한다.
+요청의 sort 조건은 사용하지 않는다.
+
 Response  `200 OK`
 ```json
 {
     "content": [
         {
             "gameVersionId": 2,
-            "version": "1.1.0",
-            "title": "정식 업데이트",
+            "version": "v1.1.0",
+            "title": "Jexon 정식 업데이트 버전",
             "status": "DRAFT",
-            "fileRegistered": true,
             "releasedAt": null,
             "createdAt": "2026-07-29T14:30:00"
         }
@@ -673,6 +685,10 @@ Response  `200 OK`
 }
 ```
 
+Error
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+
 ### 게임 버전 상세 조회
 
 Request  `GET /api/admin/game-versions/{gameVersionId}`
@@ -681,28 +697,27 @@ Response  `200 OK`
 ```json
 {
     "gameVersionId": 2,
-    "version": "1.1.0",
-    "title": "정식 업데이트",
-    "description": "신규 콘텐츠가 추가되었습니다.",
+    "version": "v1.1.0",
+    "title": "Jexon 정식 업데이트 버전",
+    "description": "신규 콘텐츠가 추가된 Jexon 정식 업데이트 버전입니다.",
     "status": "DRAFT",
     "releasedAt": null,
-    "file": {
-        "gameFileId": 1,
-        "originalName": "Jexon_Setup_1.1.0.zip",
-        "fileSize": 104857600,
-        "checksum": "sha256-checksum-value",
-        "createdAt": "2026-07-29T14:30:00"
-    }
+    "createdAt": "2026-07-29T14:30:00",
+    "updatedAt": "2026-07-29T14:30:00"
 }
 ```
+
+Error
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+- 404: 게임 버전 없음
 
 ### 게임 버전 수정
 
 Request  `PUT /api/admin/game-versions/{gameVersionId}`
 ```json
 {
-    "title": "수정된 버전 제목",
-    "description": "수정된 설명"
+    "title": "수정된 게임 버전 제목"
 }
 ```
 
@@ -710,13 +725,31 @@ Response  `200 OK`
 ```json
 {
     "gameVersionId": 2,
+    "version": "v1.1.0",
+    "title": "수정된 게임 버전 제목",
+    "description": "신규 콘텐츠가 추가된 Jexon 정식 업데이트 버전입니다.",
+    "status": "DRAFT",
+    "releasedAt": null,
+    "createdAt": "2026-07-29T14:30:00",
     "updatedAt": "2026-07-29T16:00:00"
 }
 ```
 
-정책 : 버전 번호는 생성 후 변경하지 않는다.
+정책
+- version은 생성 후 변경하지 않는다.
+- title과 description만 부분 수정할 수 있다.
+- 두 값이 모두 누락된 요청은 허용하지 않는다.
+
+Error
+- 400: 입력값 검증 실패
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
+- 404: 게임 버전 없음
+- 409: 다른 관리자의 동시 변경 충돌
 
 ### 게임 파일 업로드
+
+구현 예정: 현재 GameFile 및 파일 업로드 기능은 구현되지 않았다.
 
 Request  `POST /api/admin/game-versions/{gameVersionId}/file`
 
@@ -746,27 +779,32 @@ Error
 
 ### 최신 버전으로 배포
 
-Request  `PATCH /api/admin/game-versions/{gameVersionId}/release`
+Request  `POST /api/admin/game-versions/{gameVersionId}/release`
 
 Response  `200 OK`
 ```json
 {
     "gameVersionId": 2,
-    "version": "1.1.0",
+    "version": "v1.1.0",
     "status": "RELEASED",
     "releasedAt": "2026-07-29T16:00:00"
 }
 ```
 
 Error
-- 403: 관리자 권한 없음
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
 - 404: 게임 버전 없음
-- 404: 연결 파일 없음
-- 404: 실제 파일 없음
-- 409: 이미 RELEASED 상태
-- 409: 상태 전환 불가
+- 409: DRAFT 또는 INACTIVE가 아닌 상태
+- 409: 다른 관리자의 동시 변경 충돌
+
+release 전체는 하나의 트랜잭션에서 처리한다.
+기존 RELEASED가 있으면 INACTIVE로 변경하고 대상의 releasedAt을 현재 시각으로 갱신한다.
+낙관적 락 충돌 시 자동 재시도하지 않는다.
 
 ### DRAFT 파일 삭제
+
+구현 예정: 현재 GameFile 삭제 기능은 구현되지 않았다.
 
 Request  `DELETE /api/admin/game-versions/{gameVersionId}/file`
 

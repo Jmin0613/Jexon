@@ -406,31 +406,37 @@ ACTIVE 상태의 ADMIN
 #### 입력 정보
 - 버전 번호
 - 버전 제목
-- 간단한 설명
-- 출시 예정일 또는 출시일
+- 버전 설명
 
 #### 검증
 - 버전 번호는 필수다.
 - 버전 번호는 중복될 수 없다.
 - 버전 번호는 30자를 초과할 수 없다.
+- 버전 번호는 소문자 `v`로 시작하는 `vMAJOR.MINOR.PATCH` 형식이어야 한다.
+- 버전 제목은 10자 이상 100자 이하여야 한다.
+- 버전 설명은 10자 이상 500자 이하여야 한다.
 - 최초 등록 상태는 DRAFT다.
 
 #### 버전 번호 예시
-- 1.0.0
-- 1.1.0
-- 2.0.0-beta
+- v1.0.0
+- v1.1.0
+- v2.0.0
 
-초기에는 버전 문자열을 직접 저장하고 별도의 버전 비교 로직은 구현하지 않는다.
+버전 번호는 생성 후 변경하지 않으며 별도의 버전 비교 로직은 구현하지 않는다.
 
 ---
 
 ### 6.3 버전 목록 조회
 
 #### 사용자
-현재 RELEASED 상태인 최신 버전 정보만 조회할 수 있다.
+공개 최신 버전 조회는 GameFile 연결 단계에서 구현한다.
 
 #### 관리자
 DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
+
+- 페이지 크기는 최대 100이다.
+- 정렬은 `createdAt DESC`, `id DESC`로 고정한다.
+- status 조건 조회를 제공한다.
 
 ---
 
@@ -441,18 +447,23 @@ DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
 
 #### 사전 조건
 - 대상 버전이 존재해야 한다.
-- 대상 버전에 게임 파일이 등록되어 있어야 한다.
-- 실제 파일이 저장소에 존재해야 한다.
 - 대상 버전은 DRAFT 또는 INACTIVE 상태여야 한다.
 
+GameFile 존재 검증은 GameFile 연결 단계에서 추가한다.
+
 #### 처리
-1. 기존 RELEASED 버전을 조회한다.
-2. 기존 RELEASED 버전이 있으면 INACTIVE로 변경한다.
-3. 대상 버전을 RELEASED로 변경한다.
-4. 하나의 트랜잭션에서 처리한다.
+1. 공통 GameVersionReleaseControl의 releaseSequence를 증가시킨다.
+2. 기존 RELEASED 버전을 조회한다.
+3. 기존 RELEASED 버전이 있으면 INACTIVE로 변경한다.
+4. 대상 버전을 RELEASED로 변경한다.
+5. releasedAt을 현재 시각으로 갱신한다.
+6. 하나의 트랜잭션에서 처리한다.
 
 #### 결과
 RELEASED 상태는 최대 하나만 존재한다.
+
+GameVersion과 GameVersionReleaseControl의 `@Version`으로 동시 변경을 감지한다.
+낙관적 락 충돌 시 자동 재시도하지 않고 409 Conflict를 반환한다.
 
 ---
 
@@ -466,9 +477,18 @@ RELEASED 상태는 최대 하나만 존재한다.
 
 새 버전을 RELEASED로 변경할 때 기존 버전이 자동으로 INACTIVE 상태가 된다.
 
+### 6.6 게임 버전 수정 및 삭제
+
+- version은 수정할 수 없다.
+- title과 description은 부분 수정할 수 있다.
+- DRAFT, RELEASED, INACTIVE 모든 상태에서 수정할 수 있다.
+- GameVersion 삭제 API와 자동 삭제 정책은 제공하지 않는다.
+
 ---
 
 ## 7. 게임 파일
+
+구현 예정 영역이다. 현재 GameVersion Entity에는 GameFile 관계가 없다.
 
 ### 7.1 파일 업로드
 
@@ -534,6 +554,8 @@ RELEASED 상태의 파일은 직접 교체하지 않는다.
 ---
 
 ## 8. 게임 다운로드
+
+구현 예정 영역이다. 공개 최신 버전 조회와 실제 다운로드 API는 아직 제공하지 않는다.
 
 ### 8.1 최신 버전 조회
 
@@ -670,6 +692,7 @@ DownloadHistory 전체 행 개수를 집계한다.
 | 리소스 없음 | 404 Not Found |
 | 중복 아이디, 이메일, 닉네임, 버전 | 409 Conflict |
 | 현재 상태에서 수행할 수 없는 요청 | 409 Conflict |
+| 게임 버전 낙관적 락 충돌 | 409 Conflict |
 | 파일 저장 및 서버 내부 오류 | 500 Internal Server Error |
 
 ---
@@ -680,16 +703,17 @@ DownloadHistory 전체 행 개수를 집계한다.
 - 비밀번호는 단방향 암호화한다.
 - 실제 파일 저장 경로를 API 응답에 포함하지 않는다.
 - 관리자 API는 ADMIN 권한만 접근할 수 있다.
+- GameVersion 관리자 기능은 Service에서 최신 ACTIVE ADMIN 상태를 다시 검증한다.
 - 게시글과 댓글 수정 및 삭제 시 작성자 권한을 검증한다.
 
 ### 데이터 정합성
 - 회원 아이디, 이메일, 닉네임은 UNIQUE 제약조건을 적용한다.
 - 게임 버전 번호는 UNIQUE 제약조건을 적용한다.
 - 최신 버전 변경은 하나의 트랜잭션에서 처리한다.
-- 파일 저장과 DB 저장 실패에 대한 보상 처리를 적용한다.
+- GameVersion과 GameVersionReleaseControl에 낙관적 락을 적용한다.
+- 모든 release 요청은 singleton ReleaseControl 행을 변경하여 공통 충돌 지점을 사용한다.
+- 파일 저장과 DB 저장 실패에 대한 보상 처리는 GameFile 구현 단계에서 적용한다.
 
 ### 성능
-- 게시글, 회원, 새소식 목록은 페이징 처리한다.
-- DownloadHistory의 버전 ID와 다운로드 일시에 인덱스를 적용한다.
-- 파일 다운로드 시 전체 파일을 메모리에 올리지 않고 Resource 기반으로 응답한다.
--
+- 게시글, 회원, 새소식, 관리자 게임 버전 목록은 페이징 처리한다.
+- DownloadHistory 인덱스와 Resource 기반 다운로드는 다운로드 기능 구현 단계에서 적용한다.

@@ -6,8 +6,9 @@
 - Comment
 - News
 - GameVersion
-- GameFile
-- DownloadHistory
+- GameVersionReleaseControl
+- GameFile (구현 예정)
+- DownloadHistory (구현 예정)
 
 ---
 
@@ -15,9 +16,9 @@
 - Member 1:N Post
 - Member 1:N Comment
 - Post 1:N Comment
-- GameVersion 1:1 GameFile
-- GameVersion 1:N DownloadHistory
-- Member 1:N DownloadHistory
+- GameVersion 1:1 GameFile (구현 예정)
+- GameVersion 1:N DownloadHistory (구현 예정)
+- Member 1:N DownloadHistory (구현 예정)
 - Member 1:N News
 
 DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때문에 선택 관계다.
@@ -158,9 +159,10 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 | id | BIGINT | N | PK, AUTO_INCREMENT | 버전 식별자 |
 | version | VARCHAR(30) | N | UNIQUE | 버전 번호 |
 | title | VARCHAR(100) | N |  | 버전 제목 |
-| description | VARCHAR(500) | Y |  | 버전 설명 |
+| description | VARCHAR(500) | N |  | 버전 설명 |
 | status | VARCHAR(20) | N |  | DRAFT, RELEASED, INACTIVE |
 | released_at | DATETIME | Y |  | 실제 배포 일시 |
+| lock_version | BIGINT | N | `@Version` | 개별 행 낙관적 락 버전 |
 | created_at | DATETIME | N |  | 등록일 |
 | updated_at | DATETIME | N |  | 수정일 |
 
@@ -172,9 +174,8 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 - INACTIVE
 
 ### 관계
-- GameVersion 1:1 GameFile
-- GameVersion 1:N News
-- GameVersion 1:N DownloadHistory
+- 현재 GameVersion Entity에는 연관관계를 추가하지 않는다.
+- GameFile, News, DownloadHistory 관계는 각 도메인 구현 단계에서 검토한다.
 
 ### 제약조건
 - version UNIQUE
@@ -187,7 +188,31 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 
 ---
 
+## 7.1 GameVersionReleaseControl
+
+### 테이블명
+
+`game_version_release_control`
+
+| 컬럼 | 타입 | NULL | 제약조건 | 설명 |
+|---|---|---:|---|---|
+| id | BIGINT | N | PK, 고정값 1 | singleton 식별자 |
+| release_sequence | BIGINT | N |  | release 공통 변경 토큰 |
+| lock_version | BIGINT | N | `@Version` | 집합 수준 낙관적 락 버전 |
+| created_at | DATETIME | N |  | 생성일 |
+| updated_at | DATETIME | N |  | 수정일 |
+
+### 정책
+- 현재 RELEASED 버전 ID나 version 문자열을 저장하지 않는다.
+- latest Boolean을 저장하지 않는다.
+- 모든 release 트랜잭션이 동일한 `id = 1` 행의 releaseSequence를 증가시킨다.
+- 애플리케이션 시작 시 Initializer가 singleton 행의 존재를 확인하고 없으면 생성한다.
+
+---
+
 ## 8. GameFile
+
+구현 예정 Entity다. 현재 GameVersion과의 관계는 코드에 반영되지 않았다.
 
 ### 테이블명
 
@@ -222,6 +247,8 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 
 ## 9. DownloadHistory
 
+구현 예정 Entity다.
+
 ### 테이블명
 
 `download_histories`
@@ -254,6 +281,7 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 - Comment
 - News
 - GameVersion
+- GameVersionReleaseControl
 - GameFile
 
 JPA Auditing을 사용한다.
@@ -278,10 +306,9 @@ DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용
 관리자가 실제 삭제한다.
 
 ### GameVersion 및 GameFile
-- RELEASED 버전은 삭제할 수 없다.
-- 다운로드 이력이 있는 버전은 삭제하지 않는다.
-- DRAFT 상태이며 다운로드 이력이 없는 버전만 삭제 가능하도록 검토한다.
-- 실제 파일 삭제와 DB 삭제의 실패 처리 정책이 필요하다.
+- GameVersion 삭제 API와 자동 삭제 정책은 제공하지 않는다.
+- GameVersion 메타데이터는 상태와 관계없이 보존한다.
+- GameFile 삭제 및 실제 파일 보관 정책은 GameFile 구현 단계에서 결정한다.
 
 ### DownloadHistory
 통계 원본 데이터이므로 관리자 화면에서 삭제 기능을 제공하지 않는다.
@@ -289,6 +316,9 @@ DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용
 ---
 
 ## 12. Mermaid ERD
+
+아래 다이어그램은 구현된 Entity와 향후 구현 예정인 GameFile 및 DownloadHistory를 함께 표시한다.
+GameVersion과 GameFile/DownloadHistory의 관계는 아직 운영 코드에 반영되지 않았다.
 
 ```mermaid
 erDiagram
@@ -350,6 +380,15 @@ erDiagram
         VARCHAR description
         VARCHAR status
         DATETIME released_at
+        BIGINT lock_version
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    GAME_VERSION_RELEASE_CONTROL {
+        BIGINT id PK
+        BIGINT release_sequence
+        BIGINT lock_version
         DATETIME created_at
         DATETIME updated_at
     }
@@ -379,7 +418,5 @@ erDiagram
 
 ## 13. 구현 전 확인 사항
 - 게시글 조회 수 동시 증가 방식
-- RELEASED 상태 하나를 보장하는 트랜잭션
-- GameVersion 삭제 허용 범위
 - GameFile 삭제 실패 시 처리 방식
 - DownloadHistory IP 및 User-Agent 추가 여부

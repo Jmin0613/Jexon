@@ -166,7 +166,10 @@ RELEASED 상태의 버전은 하나만 존재하도록 한다.
 가장 최근에 생성된 버전을 자동으로 최신 버전으로 판단하는 방식
 
 ## 구현 후 보완
-트랜잭션과 동시 변경 처리 방법을 작성한다.
+release 전체 변경은 하나의 트랜잭션에서 처리한다.
+
+개별 GameVersion과 공통 GameVersionReleaseControl에 낙관적 락을 적용한다.
+구체적인 동시성 제어 방식은 `ADR-019. GameVersion release 낙관적 락 및 단일 RELEASED 보장`에 기록한다.
 
 ---
 
@@ -202,7 +205,11 @@ RELEASED 상태의 버전은 하나만 존재하도록 한다.
 - 이전 버전 정보를 삭제하지 않고 보관할 수 있다.
 
 ## 구현 후 보완
-허용되는 상태 전환 규칙을 작성한다.
+- 새 GameVersion은 DRAFT로 생성한다.
+- DRAFT 또는 INACTIVE 상태만 RELEASED로 전환할 수 있다.
+- 새 버전을 release하면 기존 RELEASED는 INACTIVE로 변경한다.
+- RELEASED를 단독으로 INACTIVE 처리하는 API는 제공하지 않는다.
+- 별도의 latest Boolean 없이 RELEASED 상태를 최신 버전의 유일한 기준으로 사용한다.
 
 ---
 
