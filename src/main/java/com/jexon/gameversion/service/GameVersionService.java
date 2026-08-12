@@ -1,5 +1,6 @@
 package com.jexon.gameversion.service;
 
+import com.jexon.gamefile.repository.GameFileRepository;
 import com.jexon.gameversion.domain.GameVersion;
 import com.jexon.gameversion.domain.GameVersionReleaseControl;
 import com.jexon.gameversion.domain.GameVersionStatus;
@@ -43,6 +44,7 @@ public class GameVersionService {
     private final GameVersionRepository gameVersionRepository;
     private final GameVersionReleaseControlRepository releaseControlRepository;
     private final MemberRepository memberRepository;
+    private final GameFileRepository gameFileRepository;
 
     @Transactional
     public GameVersionCreateResponse create(
@@ -134,6 +136,7 @@ public class GameVersionService {
 
             GameVersion target = findGameVersion(gameVersionId);
             validateReleasableStatus(target);
+            validateGameFileExists(gameVersionId);
 
             // 기존 버전 비활성화 → JPA 장바구니에 기존 GameVersion 변경
             gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)
@@ -193,6 +196,14 @@ public class GameVersionService {
                 && gameVersion.getStatus() != GameVersionStatus.INACTIVE) {
             throw new InvalidGameVersionStateException(
                     "DRAFT 또는 INACTIVE 상태의 게임 버전만 공개할 수 있습니다."
+            );
+        }
+    }
+
+    private void validateGameFileExists(Long gameVersionId) {
+        if (!gameFileRepository.existsByGameVersionId(gameVersionId)) {
+            throw new InvalidGameVersionStateException(
+                    "게임 파일이 등록된 게임 버전만 공개할 수 있습니다."
             );
         }
     }

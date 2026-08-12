@@ -2,6 +2,9 @@ package com.jexon.global.exception;
 
 import com.jexon.comment.exception.CommentNotFoundException;
 import com.jexon.comment.exception.CommentPermissionDeniedException;
+import com.jexon.gamefile.exception.DuplicateGameFileException;
+import com.jexon.gamefile.exception.FileStorageException;
+import com.jexon.gamefile.exception.InvalidGameFileException;
 import com.jexon.gameversion.exception.DuplicateGameVersionException;
 import com.jexon.gameversion.exception.GameVersionConcurrencyConflictException;
 import com.jexon.gameversion.exception.GameVersionNotFoundException;
@@ -15,6 +18,7 @@ import com.jexon.post.exception.PostPermissionDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -150,5 +154,45 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(InvalidGameFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGameFile(InvalidGameFileException exception) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(DuplicateGameFileException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateGameFile(DuplicateGameFileException exception) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                exception.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ErrorResponse> handleFileStorage(FileStorageException exception) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "파일 저장 중 오류가 발생했습니다."
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "업로드 가능한 최대 파일 크기를 초과했습니다."
+        );
+
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
     }
 }

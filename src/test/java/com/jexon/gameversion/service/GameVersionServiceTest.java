@@ -1,5 +1,6 @@
 package com.jexon.gameversion.service;
 
+import com.jexon.gamefile.repository.GameFileRepository;
 import com.jexon.gameversion.domain.*;
 import com.jexon.gameversion.dto.request.GameVersionCreateRequest;
 import com.jexon.gameversion.dto.request.GameVersionUpdateRequest;
@@ -34,6 +35,7 @@ class GameVersionServiceTest {
     @Mock GameVersionRepository gameVersionRepository;
     @Mock GameVersionReleaseControlRepository releaseControlRepository;
     @Mock MemberRepository memberRepository;
+    @Mock GameFileRepository gameFileRepository;
     @Mock GameVersionCreateRequest createRequest;
     @Mock GameVersionUpdateRequest updateRequest;
     @InjectMocks GameVersionService service;
@@ -158,6 +160,7 @@ class GameVersionServiceTest {
         GameVersion target = gameVersion(10L, "v1.0.0");
         given(releaseControlRepository.findById(1L)).willReturn(Optional.of(control));
         given(gameVersionRepository.findById(10L)).willReturn(Optional.of(target));
+        given(gameFileRepository.existsByGameVersionId(10L)).willReturn(true);
         given(gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)).willReturn(Optional.empty());
         GameVersionReleaseResponse response = service.release(1L, 10L);
         assertThat(control.getReleaseSequence()).isEqualTo(1L);
@@ -176,6 +179,7 @@ class GameVersionServiceTest {
         existing.release(oldTime);
         given(releaseControlRepository.findById(1L)).willReturn(Optional.of(control));
         given(gameVersionRepository.findById(10L)).willReturn(Optional.of(target));
+        given(gameFileRepository.existsByGameVersionId(10L)).willReturn(true);
         given(gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)).willReturn(Optional.of(existing));
         service.release(1L, 10L);
         assertThat(existing.getStatus()).isEqualTo(GameVersionStatus.INACTIVE);
@@ -196,6 +200,22 @@ class GameVersionServiceTest {
     }
 
     @Test
+    void rejectReleaseWithoutGameFile() {
+        allowAdmin();
+        given(releaseControlRepository.findById(1L))
+                .willReturn(Optional.of(GameVersionReleaseControl.create()));
+        given(gameVersionRepository.findById(10L))
+                .willReturn(Optional.of(gameVersion(10L, "v1.0.0")));
+        given(gameFileRepository.existsByGameVersionId(10L)).willReturn(false);
+
+        assertThatThrownBy(() -> service.release(1L, 10L))
+                .isInstanceOf(InvalidGameVersionStateException.class)
+                .hasMessage("게임 파일이 등록된 게임 버전만 공개할 수 있습니다.");
+        verify(gameVersionRepository, never()).findByStatus(any());
+        verify(gameVersionRepository, never()).flush();
+    }
+
+    @Test
     void rejectMissingControlAndConvertReleaseConflict() {
         allowAdmin();
         given(releaseControlRepository.findById(1L)).willReturn(Optional.empty());
@@ -203,6 +223,7 @@ class GameVersionServiceTest {
                 .hasMessage("게임 버전 배포 제어 정보가 초기화되지 않았습니다.");
         given(releaseControlRepository.findById(1L)).willReturn(Optional.of(GameVersionReleaseControl.create()));
         given(gameVersionRepository.findById(10L)).willReturn(Optional.of(gameVersion(10L, "v1.0.0")));
+        given(gameFileRepository.existsByGameVersionId(10L)).willReturn(true);
         given(gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)).willReturn(Optional.empty());
         doThrow(new OptimisticLockingFailureException("conflict")).when(gameVersionRepository).flush();
         assertThatThrownBy(() -> service.release(1L, 10L)).isInstanceOf(GameVersionConcurrencyConflictException.class);
