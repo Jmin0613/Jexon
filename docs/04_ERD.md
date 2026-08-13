@@ -7,7 +7,7 @@
 - News
 - GameVersion
 - GameVersionReleaseControl
-- GameFile (구현 예정)
+- GameFile
 - DownloadHistory (구현 예정)
 
 ---
@@ -16,7 +16,7 @@
 - Member 1:N Post
 - Member 1:N Comment
 - Post 1:N Comment
-- GameVersion 1:1 GameFile (구현 예정)
+- GameVersion 1:1 GameFile
 - GameVersion 1:N DownloadHistory (구현 예정)
 - Member 1:N DownloadHistory (구현 예정)
 - Member 1:N News
@@ -174,8 +174,9 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 - INACTIVE
 
 ### 관계
-- 현재 GameVersion Entity에는 연관관계를 추가하지 않는다.
-- GameFile, News, DownloadHistory 관계는 각 도메인 구현 단계에서 검토한다.
+- GameVersion Entity에는 GameFile 필드를 추가하지 않는다.
+- GameFile이 GameVersion을 참조하는 LAZY 단방향 OneToOne 관계의 주인이다.
+- News와 DownloadHistory 관계는 각 도메인 구현 단계에서 검토한다.
 
 ### 제약조건
 - version UNIQUE
@@ -212,7 +213,7 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 
 ## 8. GameFile
 
-구현 예정 Entity다. 현재 GameVersion과의 관계는 코드에 반영되지 않았다.
+구현된 파일 메타데이터 Entity다. 실제 파일 바이트는 LocalFileStorage에 저장하고 DB에는 저장 위치와 무결성 메타데이터를 저장한다.
 
 ### 테이블명
 
@@ -222,10 +223,10 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 |---|---|---:|---|---|
 | id | BIGINT | N | PK, AUTO_INCREMENT | 파일 식별자 |
 | game_version_id | BIGINT | N | FK, UNIQUE | 연결 게임 버전 |
-| original_name | VARCHAR(255) | N |  | 원본 파일명 |
-| stored_name | VARCHAR(255) | N | UNIQUE | UUID 저장 파일명 |
-| storage_path | VARCHAR(500) | N |  | 내부 저장 경로 |
+| original_file_name | VARCHAR(255) | N |  | 경로 제거 및 NFC 정규화된 원본 파일명 |
+| storage_key | VARCHAR(500) | N | UNIQUE | `game-files/{gameVersionId}/{UUID}.zip` 내부 키 |
 | extension | VARCHAR(20) | N |  | 파일 확장자 |
+| content_type | VARCHAR(255) | Y |  | 선택적 MIME 보조 메타데이터 |
 | file_size | BIGINT | N |  | 파일 크기(byte) |
 | checksum | VARCHAR(64) | N |  | SHA-256 |
 | created_at | DATETIME | N |  | 업로드 일시 |
@@ -233,15 +234,17 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 
 ### 관계
 - GameVersion 1:1 GameFile
+- GameFile이 관계의 주인이며 LAZY 단방향 OneToOne이다.
 
 ### 제약조건
 - game_version_id UNIQUE
-- stored_name UNIQUE
+- storage_key UNIQUE
+- `file_size > 0` CHECK
 - 한 게임 버전에는 하나의 파일만 연결된다.
 
 ### 보안 정책
-- storage_path는 사용자 API 응답에 포함하지 않는다.
-- stored_name은 사용자 API 응답에 포함하지 않는다.
+- storage_key와 실제 저장 경로는 API 응답에 포함하지 않는다.
+- content_type은 ZIP 유효성 판단 기준으로 사용하지 않는다.
 
 ---
 
@@ -308,7 +311,7 @@ DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용
 ### GameVersion 및 GameFile
 - GameVersion 삭제 API와 자동 삭제 정책은 제공하지 않는다.
 - GameVersion 메타데이터는 상태와 관계없이 보존한다.
-- GameFile 삭제 및 실제 파일 보관 정책은 GameFile 구현 단계에서 결정한다.
+- GameFile 교체 및 삭제 API는 현재 제공하지 않는다.
 
 ### DownloadHistory
 통계 원본 데이터이므로 관리자 화면에서 삭제 기능을 제공하지 않는다.
@@ -317,8 +320,8 @@ DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용
 
 ## 12. Mermaid ERD
 
-아래 다이어그램은 구현된 Entity와 향후 구현 예정인 GameFile 및 DownloadHistory를 함께 표시한다.
-GameVersion과 GameFile/DownloadHistory의 관계는 아직 운영 코드에 반영되지 않았다.
+아래 다이어그램은 구현된 Entity와 향후 구현 예정인 DownloadHistory를 함께 표시한다.
+GameVersion과 GameFile 관계는 GameFile에서 GameVersion으로 향하는 단방향 관계로 운영 코드에 반영되어 있다.
 
 ```mermaid
 erDiagram
@@ -396,10 +399,10 @@ erDiagram
     GAME_FILE {
         BIGINT id PK
         BIGINT game_version_id FK,UK
-        VARCHAR original_name
-        VARCHAR stored_name UK
-        VARCHAR storage_path
+        VARCHAR original_file_name
+        VARCHAR storage_key UK
         VARCHAR extension
+        VARCHAR content_type
         BIGINT file_size
         VARCHAR checksum
         DATETIME created_at
@@ -418,5 +421,6 @@ erDiagram
 
 ## 13. 구현 전 확인 사항
 - 게시글 조회 수 동시 증가 방식
-- GameFile 삭제 실패 시 처리 방식
+- 향후 GameFile 교체 및 삭제 정책
+- 실제 물리 파일 release 재검증 방식
 - DownloadHistory IP 및 User-Agent 추가 여부

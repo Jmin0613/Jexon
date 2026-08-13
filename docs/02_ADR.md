@@ -421,41 +421,41 @@ Spring Security 권한 검사 방식을 작성한다.
 DB에 저장된 메타데이터와 실제 파일의 동일성을 확인하기 위해 파일 무결성 값이 필요하다.
 
 ## 결정
-파일 업로드 시 SHA-256 체크섬을 계산하여 GameFile에 저장한다.
+LocalFileStorage가 temp 파일에 streaming 저장하는 단일 패스에서 각 byte chunk를 기록하면서 SHA-256 digest와 실제 fileSize를 함께 계산한다. checksum은 64자리 lowercase hexadecimal로 GameFile에 저장한다.
 
 ## 결정 이유
 - 파일 무결성을 확인할 수 있다.
 - 파일 손상 또는 변경 여부를 확인할 근거가 된다.
 - 관리자 화면이나 다운로드 안내에서 체크섬을 제공할 수 있다.
 
-## 구현 후 보완
-체크섬 계산 위치와 스트림 처리 방식을 작성한다.
+## 구현 결과
+- 전체 파일을 byte 배열로 올리지 않는다.
+- FileStorage가 반환하는 StorageResult에 storageKey, 실제 fileSize, checksum을 담는다.
+- release 시 checksum 전체 재계산은 현재 수행하지 않는다.
 
 ---
 
 # ADR-016. 파일 저장과 DB 저장 실패에 보상 처리 적용
 
 ## 상태
-구현 전 초안
+구현 완료
 
 ## 배경
 파일 시스템 저장은 DB 트랜잭션에 포함되지 않는다.
 
 파일 저장 성공 후 DB 저장이 실패하면 실제 파일만 서버에 남을 수 있다.
 
-## 초기 결정
+## 결정 및 구현
 1. 실제 파일 저장
-2. DB 메타데이터 저장 시도
-3. DB 저장 실패 시 실제 파일 삭제
-4. 파일 삭제 실패 시 오류 로그 기록
+2. GameFilePersistenceService의 짧은 별도 트랜잭션으로 DB 메타데이터 저장
+3. `saveAndFlush()` 및 commit 실패가 GameFileUploadService로 전파되면 `FileStorage.delete(storageKey)` 실행
+4. 보상 삭제 실패 시 원래 DB 예외를 유지하고 삭제 예외를 suppressed exception과 ERROR 로그로 기록
 
-## 추가 검토 사항
-- 임시 디렉터리 사용
-- 파일 삭제 재시도
-- 주기적인 고아 파일 정리
+GameFileUploadService에는 `@Transactional`을 적용하지 않아 대용량 파일 streaming 동안 DB 트랜잭션을 유지하지 않는다. LocalFileStorage 저장 자체가 실패한 경우에는 구현체가 temp 파일을 정리하므로 별도 보상 삭제를 수행하지 않는다.
 
-## 구현 후 보완
-실제 보상 처리 구조를 작성한다.
+## 현재 제외 범위
+- 보상 삭제 retry
+- background orphan cleanup
 
 ---
 
@@ -469,18 +469,23 @@ MVP에서는 서버 로컬 디렉터리에 게임 파일을 저장한다.
 
 파일 저장 로직은 별도 컴포넌트로 분리하여 향후 S3로 교체할 수 있도록 한다.
 
-## 예상 구조
-- FileStorage 인터페이스
-- LocalFileStorage 구현체
-- 향후 S3FileStorage 구현 가능
+## 구현 구조
+- `FileStorage`: `store`, `exists`, `delete`
+- `LocalFileStorage`: temp 파일, streaming, SHA-256, 실제 fileSize, 최대 크기, 안전한 경로 resolve, 덮어쓰기 방지, atomic move 우선 및 fallback, 실패 시 temp 정리, idempotent delete
+- `FileStorageProperties`: 환경변수 기반 root, 최대 512 MiB, 64 KiB buffer
+- 향후 S3FileStorage로 교체할 수 있도록 Upload Service는 FileStorage 인터페이스에 의존한다. S3 구현은 현재 존재하지 않는다.
 
 ## 결정 이유
 - MVP 개발 속도를 높일 수 있다.
 - 파일 저장 책임을 비즈니스 로직과 분리할 수 있다.
 - 테스트에서 임시 디렉터리를 사용할 수 있다.
 
-## 구현 후 보완
-실제 인터페이스와 구현체 구조를 작성한다.
+## 설정
+- root: `${JEXON_FILE_STORAGE_ROOT:./storage}`
+- max-file-size: `536870912B`
+- buffer-size: `65536B`
+- Spring multipart max-file-size: `536870912B`
+- Spring multipart max-request-size: `545259520B`
 
 ---
 

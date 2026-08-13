@@ -424,7 +424,7 @@ Response  `200 OK`
     "description": "신규 콘텐츠가 추가되었습니다.",
     "releasedAt": "2026-07-29T14:30:00",
     "file": {
-        "originalName": "Jexon_Setup_1.1.0.zip",
+        "originalFileName": "Jexon_Setup_1.1.0.zip",
         "fileSize": 104857600,
         "checksum": "sha256-checksum-value"
     }
@@ -749,11 +749,11 @@ Error
 
 ### 게임 파일 업로드
 
-구현 예정: 현재 GameFile 및 파일 업로드 기능은 구현되지 않았다.
-
 Request  `POST /api/admin/game-versions/{gameVersionId}/file`
 
 Content-Type:  `multipart/form-data`
+
+Part:  `file`
 
 Form Data:  `file: Jexon_Setup_1.1.0.zip`
 
@@ -762,19 +762,31 @@ Response  `201 Created`
 {
     "gameFileId": 1,
     "gameVersionId": 2,
-    "originalName": "Jexon_Setup_1.1.0.zip",
+    "originalFileName": "Jexon_Setup_1.1.0.zip",
+    "extension": "zip",
     "fileSize": 104857600,
-    "checksum": "sha256-checksum-value"
+    "checksum": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 }
 ```
 
+응답에는 storageKey, 실제 저장 경로 및 contentType을 포함하지 않는다.
+
+정책
+- 최신 DB 상태의 ACTIVE ADMIN만 업로드할 수 있다.
+- DRAFT GameVersion에 ZIP 파일 하나만 업로드할 수 있다.
+- 원본 파일명에서 경로를 제거하고 Unicode NFC 정규화를 적용한다.
+- 확장자와 실제 ZIP signature를 모두 검사하며 contentType은 보조 메타데이터로만 저장한다.
+- 최대 파일 크기는 512 MiB다.
+- 실제 파일 저장 후 DB 메타데이터 저장이 실패하면 저장한 파일을 보상 삭제한다.
+
 Error
-- 400: 허용되지 않은 확장자
-- 400: 파일 크기 초과
-- 403: 관리자 권한 없음
+- 400: 잘못된 파일명, ZIP 확장자 또는 ZIP signature
+- 401: 로그인 필요
+- 403: ACTIVE ADMIN 권한 없음
 - 404: 게임 버전 없음
 - 409: 이미 파일이 등록된 버전
-- 409: RELEASED 상태의 버전
+- 409: DRAFT가 아닌 상태의 버전
+- 413: 업로드 최대 크기 초과
 - 500: 파일 저장 실패
 
 ### 최신 버전으로 배포
@@ -796,11 +808,13 @@ Error
 - 403: ACTIVE ADMIN 권한 없음
 - 404: 게임 버전 없음
 - 409: DRAFT 또는 INACTIVE가 아닌 상태
+- 409: GameFile이 등록되지 않은 상태
 - 409: 다른 관리자의 동시 변경 충돌
 
 release 전체는 하나의 트랜잭션에서 처리한다.
 기존 RELEASED가 있으면 INACTIVE로 변경하고 대상의 releasedAt을 현재 시각으로 갱신한다.
 낙관적 락 충돌 시 자동 재시도하지 않는다.
+현재 release에서는 실제 물리 파일 존재 여부, 읽기 가능 여부, fileSize 또는 checksum을 재검증하지 않는다.
 
 ### DRAFT 파일 삭제
 

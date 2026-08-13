@@ -190,12 +190,17 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - 게임 버전 수정: 완료
 - 최신 버전 변경 및 이전 버전 비활성화: 완료
 - 게임 버전 낙관적 락 및 동시 release 제어: 완료
-- 게임 파일 업로드: 구현 예정
-- 파일 메타데이터 저장: 구현 예정
-- 파일 체크섬 계산: 구현 예정
+- GameFile 메타데이터 Entity 및 Repository: 완료
+- FileStorage 추상화 및 LocalFileStorage: 완료
+- DRAFT 게임 버전 ZIP 업로드: 완료
+- 파일명 정제 및 ZIP signature 검증: 완료
+- streaming 저장, 실제 fileSize 및 SHA-256 계산: 완료
+- 짧은 DB 트랜잭션을 통한 메타데이터 저장: 완료
+- DB 저장 실패 시 실제 파일 보상 삭제: 완료
+- GameFile 필수 release 조건: 완료
 
 ### 8단계. 다운로드 기능
-- 최신 버전 조회
+- 공개 최신 버전 조회
 - 다운로드 대상 검증
 - 다운로드 이력 저장
 - 파일 스트리밍
@@ -224,8 +229,12 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - 게임 버전 Entity, Service, Controller 테스트: 완료
 - MySQL 기반 버전 UNIQUE 및 낙관적 락 테스트: 완료
 - 동시 release, rollback 및 RELEASED 단일성 테스트: 완료
-- 전체 자동 테스트 122개 성공, 실패 및 건너뜀 없음
-- 파일 업로드 실패 테스트
+- GameFile 저장소, 검증, 업로드, 보상 삭제 테스트: 완료
+- GameFile 필수 release 조건 테스트: 완료
+- Postman 업로드 수동 검증: 완료
+- GameFile 관련 자동 테스트 43개 성공
+- 전체 자동 테스트 166개, failures 0, errors 0, skipped 4, BUILD SUCCESSFUL
+- Docker 미실행 환경에서는 Testcontainers 기반 테스트가 건너뛰어질 수 있음
 - 다운로드 이력 테스트
 - 다운로드 통계 테스트
 
@@ -318,14 +327,27 @@ Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
 - 새소식
 
 ### Step 4
-- 게임 버전: 완료
-- 파일 업로드: 구현 예정
-- 파일 메타데이터: 구현 예정
+- GameVersion 등록, 조회, 수정 및 release: 완료
+- GameVersion release 동시성 제어: 완료
+- GameFile 메타데이터 및 Repository: 완료
+- FileStorage 및 LocalFileStorage: 완료
+- ZIP 업로드와 streaming 저장: 완료
+- 파일명 및 ZIP signature 검증: 완료
+- SHA-256 및 실제 fileSize 계산: 완료
+- DB 메타데이터 저장과 실패 시 파일 보상 삭제: 완료
+- GameFile 필수 release 조건: 완료
+- 관련 자동 테스트 및 Postman 수동 검증: 완료
 
 ### Step 5
-- 최신 버전 변경
-- 다운로드
-- 다운로드 이력
+- 공개 최신 버전 조회
+- Download API 및 실제 다운로드 streaming
+- DownloadHistory 및 다운로드 통계
+- 실제 물리 파일 release 재검증
+
+### Step 4 이후 확장 예정
+- S3 및 CDN
+- 파일 교체 및 삭제
+- background orphan cleanup
 
 ### Step 6
 - 관리자 기능

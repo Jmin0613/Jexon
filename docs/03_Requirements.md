@@ -429,7 +429,7 @@ ACTIVE 상태의 ADMIN
 ### 6.3 버전 목록 조회
 
 #### 사용자
-공개 최신 버전 조회는 GameFile 연결 단계에서 구현한다.
+공개 최신 버전 조회는 아직 구현하지 않았으며 Download API 단계에서 구현한다.
 
 #### 관리자
 DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
@@ -448,8 +448,9 @@ DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
 #### 사전 조건
 - 대상 버전이 존재해야 한다.
 - 대상 버전은 DRAFT 또는 INACTIVE 상태여야 한다.
+- 대상 버전에 GameFile이 등록되어 있어야 한다.
 
-GameFile 존재 검증은 GameFile 연결 단계에서 추가한다.
+GameFile이 없으면 409 Conflict로 release를 거부한다. 현재 release 단계에서는 실제 물리 파일의 존재 여부, 읽기 가능 여부, fileSize 일치 또는 checksum을 재검증하지 않는다.
 
 #### 처리
 1. 공통 GameVersionReleaseControl의 releaseSequence를 증가시킨다.
@@ -488,7 +489,7 @@ GameVersion과 GameVersionReleaseControl의 `@Version`으로 동시 변경을 �
 
 ## 7. 게임 파일
 
-구현 예정 영역이다. 현재 GameVersion Entity에는 GameFile 관계가 없다.
+GameFile은 실제 파일과 분리된 DB 메타데이터다. GameVersion과 GameFile은 1:1이며 관계의 주인은 GameFile이다. GameFile에서 GameVersion으로 향하는 LAZY 단방향 OneToOne 관계를 사용한다.
 
 ### 7.1 파일 업로드
 
@@ -497,59 +498,61 @@ GameVersion과 GameVersionReleaseControl의 `@Version`으로 동시 변경을 �
 
 #### 사전 조건
 - 대상 게임 버전이 존재해야 한다.
-- 대상 버전 상태가 DRAFT 또는 INACTIVE여야 한다.
+- 대상 버전 상태가 DRAFT여야 한다.
 - 대상 버전에 기존 파일이 없어야 한다.
 
 #### 허용 파일
 
 초기 MVP에서는 다음 확장자를 허용한다.
 - `.zip`
-- `.exe`
+
+확장자만 신뢰하지 않고 일반 ZIP `50 4B 03 04` 또는 빈 ZIP `50 4B 05 06` signature를 확인한다. MIME contentType은 선택적 보조 메타데이터이며 유효성 판단 기준으로 사용하지 않는다.
 
 #### 파일 크기
-최대 파일 크기는 개발 환경 테스트를 고려하여 초기에는 2GB 이하로 설정한다.
-
-실제 Spring Multipart 설정값은 개발 환경에 맞게 조정한다.
+최대 파일 크기는 512 MiB(`536870912` bytes)다. Spring Multipart와 FileStorage의 실제 streaming byte 수 검증을 함께 적용한다.
 
 #### 처리
-1. 업로드 파일 검증
-2. UUID 서버 파일명 생성
-3. 파일 저장소에 실제 파일 저장
-4. SHA-256 체크섬 계산
-5. GameFile 메타데이터 저장
-6. DB 저장 실패 시 실제 파일 삭제
+1. 최신 Member를 조회하여 ACTIVE ADMIN 권한을 검사한다.
+2. GameVersion 존재, DRAFT 상태, 기존 GameFile 여부를 선검사한다.
+3. 경로를 제거한 basename에 Unicode NFC 정규화를 적용하고 확장자를 추출한다.
+4. ZIP 확장자와 실제 signature를 검사한다.
+5. `game-files/{gameVersionId}/{UUID}.zip` 형식의 storageKey를 생성한다.
+6. LocalFileStorage의 temp 파일에 한 번의 streaming으로 저장하면서 실제 fileSize, SHA-256 및 최대 크기를 검사한다.
+7. 성공하면 temp 파일을 최종 위치로 이동하고 StorageResult를 반환한다.
+8. GameFilePersistenceService의 짧은 DB 트랜잭션에서 GameVersion 상태와 중복을 재검사한다.
+9. GameFile 메타데이터를 생성하고 `saveAndFlush()`한다.
+10. 실제 파일 저장 후 DB 저장 또는 commit이 실패하면 `FileStorage.delete(storageKey)`로 보상 삭제한다.
 
 #### 저장 정보
 - 원본 파일명
-- 서버 저장 파일명
-- 저장 경로
+- 내부 storageKey
 - 확장자
+- 선택적 contentType
 - 파일 크기
 - SHA-256 체크섬
 
+storageKey와 실제 저장 경로는 API 응답에 노출하지 않는다.
+
+### 7.2 FileStorage 및 정합성
+
+`FileStorage`는 `store`, `exists`, `delete`만 제공하며 MultipartFile이나 도메인 Entity에 의존하지 않는다. 현재 구현체인 LocalFileStorage는 안전한 경로 resolve, root 탈출 방지, 기존 파일 덮어쓰기 방지, temp 파일, streaming, atomic move 우선 및 일반 move fallback, 실패 시 temp 정리, idempotent delete를 담당한다.
+
+GameFileUploadService에는 트랜잭션을 적용하지 않아 파일 streaming 동안 DB 트랜잭션을 유지하지 않는다. GameFilePersistenceService에만 짧은 `@Transactional`을 적용한다. 파일 시스템은 DB rollback 대상이 아니므로 DB 실패 시 직접 보상 삭제한다. 보상 삭제 실패는 원래 DB 예외를 유지하고 suppressed exception과 ERROR 로그로 기록한다.
+
+GameFile 중복은 UploadService 선검사, PersistenceService 재검사, DB `uk_game_file_game_version_id` UNIQUE 제약의 세 단계로 방어한다. 동시 INSERT 충돌은 DuplicateGameFileException으로 변환하여 409 Conflict를 반환한다.
+
+Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동일 GameVersion에 대한 공통 행 잠금이 없다. 두 작업이 정확히 동시에 실행되는 극단적인 경우 경쟁 가능성이 남아 있으며 현재 MVP에서는 추가 lock을 도입하지 않는다.
+
 ---
 
-### 7.2 파일 교체
-초기 MVP에서는 파일이 등록된 버전에 새로운 파일을 직접 덮어쓰지 않는다.
-
-잘못된 파일이 등록된 경우 다음 방식 중 하나로 처리한다.
-
-- DRAFT 상태에서 기존 파일을 삭제한 후 새 파일 등록
-- 새로운 게임 버전을 등록
-
-RELEASED 상태의 파일은 직접 교체하지 않는다.
+### 7.3 파일 교체
+초기 MVP에서는 파일 교체 기능을 제공하지 않는다. 동일 GameVersion에 GameFile이 이미 존재하면 409 Conflict를 반환한다.
 
 ---
 
-### 7.3 파일 삭제
+### 7.4 파일 삭제
 
-#### 권한
-관리자
-
-#### 조건
-- DRAFT 상태의 버전 파일만 삭제할 수 있다.
-- RELEASED 상태의 파일은 삭제할 수 없다.
-- 다운로드 이력이 있는 파일은 직접 삭제하지 않는다.
+초기 MVP에서는 GameFile 삭제 API를 제공하지 않는다.
 
 ---
 
@@ -712,7 +715,7 @@ DownloadHistory 전체 행 개수를 집계한다.
 - 최신 버전 변경은 하나의 트랜잭션에서 처리한다.
 - GameVersion과 GameVersionReleaseControl에 낙관적 락을 적용한다.
 - 모든 release 요청은 singleton ReleaseControl 행을 변경하여 공통 충돌 지점을 사용한다.
-- 파일 저장과 DB 저장 실패에 대한 보상 처리는 GameFile 구현 단계에서 적용한다.
+- 파일 저장 성공 후 DB 저장 실패 시 FileStorage.delete로 보상 삭제한다.
 
 ### 성능
 - 게시글, 회원, 새소식, 관리자 게임 버전 목록은 페이징 처리한다.
