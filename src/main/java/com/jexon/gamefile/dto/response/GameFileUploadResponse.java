@@ -14,6 +14,7 @@ public class GameFileUploadResponse {
     private String extension;
     private Long fileSize;
     private String checksum;
+    // storageKey 미포함 → 외부 API에 노출X
 
     public static GameFileUploadResponse from(GameFile gameFile) {
         return new GameFileUploadResponse(

@@ -156,6 +156,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
+    // 업로드 요청 파일 검증 실패
     @ExceptionHandler(InvalidGameFileException.class)
     public ResponseEntity<ErrorResponse> handleInvalidGameFile(InvalidGameFileException exception) {
         ErrorResponse response = new ErrorResponse(
@@ -166,6 +167,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    // 중복 파일 업드로로 인한 충돌
     @ExceptionHandler(DuplicateGameFileException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateGameFile(DuplicateGameFileException exception) {
         ErrorResponse response = new ErrorResponse(
@@ -176,6 +178,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
+    // 실제 저장소 I/O 등 서버 내부 저장 실패
     @ExceptionHandler(FileStorageException.class)
     public ResponseEntity<ErrorResponse> handleFileStorage(FileStorageException exception) {
         ErrorResponse response = new ErrorResponse(
@@ -186,6 +189,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    // Multipart 단계에서 최대 업로드 크기 초과
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException exception) {
         ErrorResponse response = new ErrorResponse(

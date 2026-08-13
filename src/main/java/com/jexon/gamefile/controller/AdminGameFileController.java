@@ -20,12 +20,13 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminGameFileController {
     private final GameFileUploadService gameFileUploadService;
 
-    @PostMapping(path = "/{gameVersionId}/file", consumes = "multipart/form-data")
+    @PostMapping(path = "/{gameVersionId}/file", consumes = "multipart/form-data") //api가 받을 데이터 포맷
     public ResponseEntity<GameFileUploadResponse> upload(
             @PathVariable Long gameVersionId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestPart("file") MultipartFile file
+            @RequestPart("file") MultipartFile file // 업로드 요청 파일 MultipartFile 객체로 받기
     ) {
+        // 업로드 요청
         GameFileUploadResponse response = gameFileUploadService.upload(
                 userDetails.getMemberId(),
                 gameVersionId,

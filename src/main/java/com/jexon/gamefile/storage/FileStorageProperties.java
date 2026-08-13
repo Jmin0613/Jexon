@@ -9,9 +9,9 @@ import java.nio.file.Path;
 @Component
 @ConfigurationProperties(prefix = "jexon.file-storage")
 public class FileStorageProperties {
-    private Path root = Path.of("./storage");
-    private DataSize maxFileSize = DataSize.ofBytes(536_870_912L);
-    private DataSize bufferSize = DataSize.ofBytes(65_536L);
+    private Path root = Path.of("./storage"); // yml의 root 값 매핑
+    private DataSize maxFileSize = DataSize.ofBytes(536_870_912L); // yml의 max-file-size 값 매핑
+    private DataSize bufferSize = DataSize.ofBytes(65_536L); // yml의 buffer-size 값 매핑
 
     public Path getRoot() {
         return root;

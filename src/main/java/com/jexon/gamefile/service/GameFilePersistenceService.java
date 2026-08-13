@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GameFilePersistenceService {
-    private static final String GAME_VERSION_UNIQUE_CONSTRAINT = "uk_game_file_game_version_id";
+    // 수집한 메타데이터 → GameFile Entity로 조립해 db에 저장
+
+    private static final String GAME_VERSION_UNIQUE_CONSTRAINT = "uk_game_file_game_version_id"; // Unique 제약조건
 
     private final GameVersionRepository gameVersionRepository;
     private final GameFileRepository gameFileRepository;
@@ -31,18 +33,23 @@ public class GameFilePersistenceService {
             String contentType,
             StorageResult storageResult
     ) {
+        // 존재 여부 검증
         GameVersion gameVersion = gameVersionRepository.findById(gameVersionId)
                 .orElseThrow(GameVersionNotFoundException::new);
 
+        // 상태 검증
         if (gameVersion.getStatus() != GameVersionStatus.DRAFT) {
             throw new InvalidGameVersionStateException(
                     "DRAFT 상태의 게임 버전에만 파일을 업로드할 수 있습니다."
             );
         }
+
+        // 중복 검증
         if (gameFileRepository.existsByGameVersionId(gameVersionId)) {
             throw new DuplicateGameFileException();
         }
 
+        // 엔티티 조립
         GameFile gameFile = GameFile.createGameFile(
                 gameVersion,
                 originalFileName,
@@ -53,6 +60,7 @@ public class GameFilePersistenceService {
                 storageResult.checksum()
         );
 
+        // db 저장 + 즉시 flush하여 UNIQUE 제약 위반 감지
         try {
             return gameFileRepository.saveAndFlush(gameFile);
         } catch (DataIntegrityViolationException exception) {
@@ -63,10 +71,12 @@ public class GameFilePersistenceService {
         }
     }
 
+    // db 에러 판별
     private boolean isGameVersionUniqueConstraintViolation(DataIntegrityViolationException exception) {
         Throwable cause = exception;
 
         while (cause != null) {
+            // Unique 제약조건 위반 시
             if (cause instanceof ConstraintViolationException constraintViolationException) {
                 String constraintName = constraintViolationException.getConstraintName();
                 return constraintName != null

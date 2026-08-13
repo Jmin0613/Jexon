@@ -126,36 +126,38 @@ public class GameVersionService {
         return GameVersionDetailResponse.from(gameVersion);
     }
 
+    // 공식 배포 로직
     @Transactional
     public GameVersionReleaseResponse release(Long memberId, Long gameVersionId) {
-        findActiveAdmin(memberId, "게임 버전을 배포할 권한이 없습니다.");
+        findActiveAdmin(memberId, "게임 버전을 배포할 권한이 없습니다."); // 권한 검사
 
         try {
             GameVersionReleaseControl releaseControl = findReleaseControl();
-            releaseControl.advanceReleaseSequence(); // releaseControl 객체 값 변경
+            releaseControl.advanceReleaseSequence(); // 배포 시퀀스 증가 (releaseSequence + 1)
 
             GameVersion target = findGameVersion(gameVersionId);
-            validateReleasableStatus(target);
-            validateGameFileExists(gameVersionId);
+            validateReleasableStatus(target); // 배포 가능 상태 검사
+            validateGameFileExists(gameVersionId); // GameFile 등록 여부 검사
 
-            // 기존 버전 비활성화 → JPA 장바구니에 기존 GameVersion 변경
+            // 기존 버전 비활성화
             gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)
                     .ifPresent(GameVersion::deactivateForReplacement);
 
             LocalDateTime releasedAt = LocalDateTime.now();
             target.release(releasedAt); // 새 버전을 release 상태로 변경
 
-            // 영속성 컨텍스트 안에 있는 모든 번경사항 db로 flush
+            // 영속 상태 엔티티의 변경사항을 즉시 DB에 반영해 낙관적 락 충돌을 현재 메서드에서 확인
             gameVersionRepository.flush();
-            // ReleaseControl 변경
-            // 기존 RELEASED 변경
-            // 대상 GameVersion 변경
+            // ReleaseControl, 기존 RELEASED 버전, 대상 버전의 변경사항 반영
 
             return GameVersionReleaseResponse.from(target);
         } catch (OptimisticLockingFailureException exception) {
+            // 동시 배포로 @Version 충돌 시 409용 도메인 예외로 변환
             throw new GameVersionConcurrencyConflictException();
         }
     }
+
+    // helper 메서드 -------------------------------------------------------------------------------
 
     private Member findActiveAdmin(Long memberId, String deniedMessage) {
         Member member = memberRepository.findById(memberId)

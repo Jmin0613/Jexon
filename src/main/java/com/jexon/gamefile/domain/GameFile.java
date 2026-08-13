@@ -25,10 +25,12 @@ import java.util.regex.Pattern;
 @Table(
         name = "game_files",
         uniqueConstraints = {
+                // 1 file → 1 versionId
                 @UniqueConstraint(
                         name = "uk_game_file_game_version_id",
                         columnNames = "game_version_id"
                 ),
+                // key 중복 금지
                 @UniqueConstraint(
                         name = "uk_game_file_storage_key",
                         columnNames = "storage_key"
@@ -43,6 +45,8 @@ import java.util.regex.Pattern;
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GameFile extends BaseTimeEntity {
+    // 실제 파일 자체가 아닌, 저장된 게임 파일의 메타데이터를 관리하는 엔티티
+
     private static final Pattern SHA_256_PATTERN = Pattern.compile("^[0-9a-f]{64}$");
 
     @Id
@@ -84,6 +88,7 @@ public class GameFile extends BaseTimeEntity {
             Long fileSize,
             String checksum
     ) {
+        // 각 필드 유효성 검증
         validateGameVersion(gameVersion);
         validateOriginalFileName(originalFileName);
         validateStorageKey(storageKey);
@@ -120,6 +125,8 @@ public class GameFile extends BaseTimeEntity {
                 checksum
         );
     }
+
+    // helper 메서드 -------------------------------------------------------------------------------
 
     private static void validateGameVersion(GameVersion gameVersion) {
         if (gameVersion == null) {
