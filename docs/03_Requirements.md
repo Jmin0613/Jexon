@@ -429,7 +429,8 @@ ACTIVE 상태의 ADMIN
 ### 6.3 버전 목록 조회
 
 #### 사용자
-공개 최신 버전 조회는 아직 구현하지 않았으며 Download API 단계에서 구현한다.
+비회원, USER, ADMIN은 현재 RELEASED 상태인 공식 최신 버전과 연결된 공개 GameFile 메타데이터를 조회할 수 있다.
+최신 버전은 version 문자열이나 createdAt이 아니라 RELEASED 상태 하나로 결정한다. DRAFT와 INACTIVE는 공개하지 않는다.
 
 #### 관리자
 DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
@@ -535,7 +536,7 @@ storageKey와 실제 저장 경로는 API 응답에 노출하지 않는다.
 
 ### 7.2 FileStorage 및 정합성
 
-`FileStorage`는 `store`, `exists`, `delete`만 제공하며 MultipartFile이나 도메인 Entity에 의존하지 않는다. 현재 구현체인 LocalFileStorage는 안전한 경로 resolve, root 탈출 방지, 기존 파일 덮어쓰기 방지, temp 파일, streaming, atomic move 우선 및 일반 move fallback, 실패 시 temp 정리, idempotent delete를 담당한다.
+`FileStorage`는 `store`, `exists`, `open`, `delete`를 제공하며 MultipartFile이나 도메인 Entity에 의존하지 않는다. 현재 구현체인 LocalFileStorage는 안전한 경로 resolve, root 탈출 방지, 기존 파일 덮어쓰기 방지, temp 파일, streaming, atomic move 우선 및 일반 move fallback, 실패 시 temp 정리, idempotent delete를 담당한다. `open`도 기존 안전 경로 변환을 재사용하고 READ 전용 InputStream을 반환한다.
 
 GameFileUploadService에는 트랜잭션을 적용하지 않아 파일 streaming 동안 DB 트랜잭션을 유지하지 않는다. GameFilePersistenceService에만 짧은 `@Transactional`을 적용한다. 파일 시스템은 DB rollback 대상이 아니므로 DB 실패 시 직접 보상 삭제한다. 보상 삭제 실패는 원래 DB 예외를 유지하고 suppressed exception과 ERROR 로그로 기록한다.
 
@@ -558,7 +559,7 @@ Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동�
 
 ## 8. 게임 다운로드
 
-구현 예정 영역이다. 공개 최신 버전 조회와 실제 다운로드 API는 아직 제공하지 않는다.
+공개 최신 버전 조회, 실제 파일 스트리밍 다운로드 및 DownloadHistory 적재가 구현되어 있다. 관리자 통계 조회는 Step 6에서 구현한다.
 
 ### 8.1 최신 버전 조회
 
@@ -566,13 +567,17 @@ Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동�
 비회원 포함 전체 사용자
 
 #### 반환 정보
-- 버전 ID
-- 버전 번호
-- 버전 제목
-- 출시일
-- 파일명
-- 파일 크기
-- 체크섬
+- gameVersionId
+- version
+- title
+- description
+- releasedAt
+- gameFileId
+- originalFileName
+- fileSize
+- checksum
+
+storageKey, 실제 물리 경로, contentType, lockVersion, createdAt, updatedAt 및 ReleaseControl 정보는 반환하지 않는다.
 
 ---
 
@@ -585,9 +590,9 @@ Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동�
 1. RELEASED 상태의 버전을 조회한다.
 2. 버전에 연결된 GameFile을 조회한다.
 3. 실제 파일 존재 여부를 확인한다.
-4. 파일 읽기 가능 여부를 확인한다.
-5. DownloadHistory를 저장한다.
-6. 파일을 스트리밍 응답한다.
+4. `FileStorage.open()`으로 InputStream을 연다.
+5. DownloadHistory 저장을 한 번 시도한다.
+6. `InputStreamResource`로 파일을 스트리밍 응답한다.
 
 #### 응답
 - Content-Type: application/octet-stream
@@ -606,12 +611,16 @@ Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동�
 모든 파일 검증을 통과한 후 파일 응답을 시작하기 직전에 저장한다.
 
 #### 저장 정보
-- 게임 버전 ID
-- 로그인 회원 ID 또는 NULL
-- 다운로드 일시
+- GameVersion 필수 관계
+- GameFile 필수 관계
+- BaseTimeEntity의 createdAt
+
+Member, IP 및 User-Agent는 저장하지 않는다. cascade와 orphanRemoval도 추가하지 않는다.
 
 #### 통계 기준
 다운로드 수는 파일 전송 완료 횟수가 아니라 유효한 다운로드 시작 횟수를 의미한다.
+
+RELEASED, GameFile, 실제 물리 파일 확인과 `FileStorage.open()`까지 성공한 경우에만 요청당 정확히 한 번 저장을 시도한다. 이력 저장은 `REQUIRES_NEW` 트랜잭션과 `saveAndFlush()`를 사용한다. 저장 실패는 WARN 로그로 남기고 실제 다운로드는 계속한다.
 
 ---
 
@@ -668,6 +677,8 @@ SUSPENDED 상태를 ACTIVE 상태로 변경한다.
 
 ## 11. 다운로드 통계
 
+Step 6 구현 예정 영역이다. 현재는 DownloadHistory 적재 기반만 제공하며 통계 조회 API와 집계 쿼리는 구현하지 않았다.
+
 ### 11.1 전체 다운로드 수
 DownloadHistory 전체 행 개수를 집계한다.
 
@@ -719,4 +730,4 @@ DownloadHistory 전체 행 개수를 집계한다.
 
 ### 성능
 - 게시글, 회원, 새소식, 관리자 게임 버전 목록은 페이징 처리한다.
-- DownloadHistory 인덱스와 Resource 기반 다운로드는 다운로드 기능 구현 단계에서 적용한다.
+- DownloadHistory 통계용 인덱스와 집계 쿼리는 Step 6에서 검토한다.

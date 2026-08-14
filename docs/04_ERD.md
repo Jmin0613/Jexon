@@ -8,7 +8,7 @@
 - GameVersion
 - GameVersionReleaseControl
 - GameFile
-- DownloadHistory (구현 예정)
+- DownloadHistory
 
 ---
 
@@ -17,11 +17,11 @@
 - Member 1:N Comment
 - Post 1:N Comment
 - GameVersion 1:1 GameFile
-- GameVersion 1:N DownloadHistory (구현 예정)
-- Member 1:N DownloadHistory (구현 예정)
+- GameVersion 1:N DownloadHistory
+- GameFile 1:N DownloadHistory
 - Member 1:N News
 
-DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때문에 선택 관계다.
+DownloadHistory는 Member와 관계를 맺지 않는다.
 
 ---
 
@@ -250,7 +250,7 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 
 ## 9. DownloadHistory
 
-구현 예정 Entity다.
+정상적으로 다운로드 응답을 시작할 수 있었던 요청을 기록하는 구현 완료 Entity다.
 
 ### 테이블명
 
@@ -260,19 +260,18 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 |---|---|---:|---|---|
 | id | BIGINT | N | PK, AUTO_INCREMENT | 다운로드 이력 식별자 |
 | game_version_id | BIGINT | N | FK | 다운로드 버전 |
-| member_id | BIGINT | Y | FK | 로그인 회원, 비회원은 NULL |
-| downloaded_at | DATETIME | N |  | 다운로드 시작 일시 |
+| game_file_id | BIGINT | N | FK | 다운로드 파일 |
+| created_at | DATETIME | N |  | 다운로드 응답 시작 가능 시각 |
+| updated_at | DATETIME | N |  | 수정 일시, BaseTimeEntity 상속 |
 
 ### 관계
-- GameVersion N:1 DownloadHistory
-- Member N:1 DownloadHistory
-- member_id는 NULL을 허용한다.
+- DownloadHistory N:1 GameVersion
+- DownloadHistory N:1 GameFile
+- 두 관계는 LAZY이며 필수다.
+- cascade와 orphanRemoval은 설정하지 않는다.
 
 ### 인덱스
-- game_version_id
-- member_id
-- downloaded_at
-- `(game_version_id, downloaded_at)` 복합 인덱스 검토
+현재 별도 인덱스는 추가하지 않았다. Step 6 통계 쿼리 구현 시 game_version_id와 created_at 기반 인덱스를 검토한다.
 
 ---
 
@@ -286,10 +285,11 @@ DownloadHistory의 Member 관계는 비회원 다운로드를 허용하기 때�
 - GameVersion
 - GameVersionReleaseControl
 - GameFile
+- DownloadHistory
 
 JPA Auditing을 사용한다.
 
-DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용한다.
+DownloadHistory는 BaseTimeEntity를 상속하며 createdAt을 다운로드 시각으로 사용한다.
 
 ---
 
@@ -320,7 +320,7 @@ DownloadHistory는 생성 후 수정하지 않으므로 `downloadedAt`만 사용
 
 ## 12. Mermaid ERD
 
-아래 다이어그램은 구현된 Entity와 향후 구현 예정인 DownloadHistory를 함께 표시한다.
+아래 다이어그램은 현재 구현된 Entity를 표시한다.
 GameVersion과 GameFile 관계는 GameFile에서 GameVersion으로 향하는 단방향 관계로 운영 코드에 반영되어 있다.
 
 ```mermaid
@@ -328,12 +328,11 @@ erDiagram
     MEMBER ||--o{ POST : writes
     MEMBER ||--o{ COMMENT : writes
     MEMBER ||--o{ NEWS : creates
-    MEMBER o|--o{ DOWNLOAD_HISTORY : downloads
-
     POST ||--o{ COMMENT : has
 
     GAME_VERSION ||--o| GAME_FILE : contains
     GAME_VERSION ||--o{ DOWNLOAD_HISTORY : recorded_for
+    GAME_FILE ||--o{ DOWNLOAD_HISTORY : records
 
     MEMBER {
         BIGINT id PK
@@ -412,8 +411,9 @@ erDiagram
     DOWNLOAD_HISTORY {
         BIGINT id PK
         BIGINT game_version_id FK
-        BIGINT member_id FK
-        DATETIME downloaded_at
+        BIGINT game_file_id FK
+        DATETIME created_at
+        DATETIME updated_at
     }
 ```
 
@@ -423,4 +423,4 @@ erDiagram
 - 게시글 조회 수 동시 증가 방식
 - 향후 GameFile 교체 및 삭제 정책
 - 실제 물리 파일 release 재검증 방식
-- DownloadHistory IP 및 User-Agent 추가 여부
+- Step 6 DownloadHistory 통계 쿼리 및 인덱스

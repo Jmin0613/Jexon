@@ -200,11 +200,14 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - GameFile 필수 release 조건: 완료
 
 ### 8단계. 다운로드 기능
-- 공개 최신 버전 조회
-- 다운로드 대상 검증
-- 다운로드 이력 저장
-- 파일 스트리밍
-- 다운로드 예외 처리
+- 공개 최신 RELEASED 버전 및 GameFile 메타데이터 조회: 완료
+- 공개 최신 버전 실제 파일 다운로드: 완료
+- FileStorage 읽기 기능 및 LocalFileStorage 스트리밍: 완료
+- 원본 파일명 기반 Content-Disposition 응답: 완료
+- 다운로드 대상 및 실제 물리 파일 검증: 완료
+- DownloadHistory 요청별 적재: 완료
+- 별도 트랜잭션 기반 best-effort 이력 저장: 완료
+- 다운로드 예외 처리: 완료
 
 ### 9단계. 관리자 기능
 - 회원 목록 및 검색
@@ -232,11 +235,13 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - GameFile 저장소, 검증, 업로드, 보상 삭제 테스트: 완료
 - GameFile 필수 release 조건 테스트: 완료
 - Postman 업로드 수동 검증: 완료
-- GameFile 관련 자동 테스트 43개 성공
-- 전체 자동 테스트 166개, failures 0, errors 0, skipped 4, BUILD SUCCESSFUL
+- Step 5 관련 Service, FileStorage, Controller 및 Security 테스트: 완료
+- 전체 자동 테스트 187개, failures 0, errors 0, skipped 4, BUILD SUCCESSFUL
 - Docker 미실행 환경에서는 Testcontainers 기반 테스트가 건너뛰어질 수 있음
-- 다운로드 이력 테스트
-- 다운로드 통계 테스트
+- Postman에서 비로그인 최신 버전 조회 200, 공개 메타데이터 및 storageKey 비노출 확인: 완료
+- Postman에서 비로그인 실제 ZIP 스트리밍 다운로드 및 바이너리 저장 확인: 완료
+- 동일 다운로드 2회 요청 후 download_histories가 1행씩 총 2행으로 누적되고 GameVersion, GameFile, createdAt이 일치하는지 DB 확인: 완료
+- 다운로드 통계 테스트: Step 6 예정
 
 ### 12단계. 배포 및 문서화
 - Docker 설정
@@ -339,10 +344,16 @@ Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
 - 관련 자동 테스트 및 Postman 수동 검증: 완료
 
 ### Step 5
-- 공개 최신 버전 조회
-- Download API 및 실제 다운로드 streaming
-- DownloadHistory 및 다운로드 통계
-- 실제 물리 파일 release 재검증
+- 공개 최신 RELEASED 버전 조회: 완료
+- 공개 GameFile 메타데이터 조회: 완료
+- Download API 및 실제 파일 streaming: 완료
+- FileStorage `open` 및 LocalFileStorage 읽기: 완료
+- DownloadHistory Entity, Repository 및 Service: 완료
+- 정상 다운로드 요청별 이력 적재: 완료
+- 이력 저장 실패 시 다운로드 계속 처리: 완료
+- 관련 자동 테스트 및 Postman/DB 수동 검증: 완료
+- 관리자 다운로드 통계 조회: Step 6 예정
+- 실제 물리 파일 release 재검증: 미구현
 
 ### Step 4 이후 확장 예정
 - S3 및 CDN
@@ -351,7 +362,8 @@ Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
 
 ### Step 6
 - 관리자 기능
-- 다운로드 통계
+- 전체/버전별/일별 다운로드 통계 API
+- 관리자 다운로드 통계 화면
 - 프론트엔드 연동
 
 ### Step 7

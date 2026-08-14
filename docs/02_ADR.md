@@ -53,7 +53,8 @@ Jexon은 여러 게임을 제공하는 플랫폼이 아니라 하나의 게임�
 회원만 게임 파일을 다운로드할 수 있도록 제한하는 방식
 
 ## 구현 후 보완
-실제 다운로드 이력 저장 기준을 작성한다.
+비회원, USER, ADMIN 모두 공개 최신 버전 조회와 다운로드 API를 사용할 수 있다.
+DownloadHistory에는 Member를 연결하지 않으며 모든 정상 다운로드 요청을 같은 기준으로 기록한다.
 
 ---
 
@@ -227,12 +228,13 @@ release 전체 변경은 하나의 트랜잭션에서 처리한다.
 모든 다운로드는 서버의 다운로드 API를 통해 처리한다.
 
 ## 처리 흐름
-1. 최신 버전 조회
-2. 버전 상태 검사
-3. 파일 메타데이터 조회
-4. 실제 파일 존재 검사
-5. 다운로드 이력 저장
-6. 파일 스트리밍 응답
+1. RELEASED 버전 조회
+2. GameFile 메타데이터 조회
+3. 실제 파일 존재 검사
+4. FileStorage를 통한 파일 open
+5. 다운로드 응답 정보 구성
+6. 다운로드 이력 저장 시도
+7. InputStreamResource 파일 스트리밍 응답
 
 ## 결정 이유
 - 실제 저장 경로를 숨길 수 있다.
@@ -240,7 +242,10 @@ release 전체 변경은 하나의 트랜잭션에서 처리한다.
 - 다운로드 요청을 일관되게 기록할 수 있다.
 
 ## 구현 후 보완
-실제 응답 헤더와 스트리밍 방식을 작성한다.
+공개 다운로드 API는 `GET /api/game-versions/latest/download`다.
+FileStorage의 `open(storageKey)`으로 InputStream을 열고 `InputStreamResource`로 응답한다.
+응답은 `application/octet-stream`, 원본 파일명의 attachment Content-Disposition 및 GameFile.fileSize 기반 Content-Length를 사용한다.
+storageKey와 실제 저장 경로는 외부에 노출하지 않는다.
 
 ---
 
@@ -255,12 +260,13 @@ release 전체 변경은 하나의 트랜잭션에서 처리한다.
 ## 결정
 다운로드 요청마다 DownloadHistory 데이터를 생성한다.
 
-## 초기 저장 정보
-- 다운로드 대상 버전
-- 로그인 회원 ID 또는 NULL
-- 다운로드 일시
+## 최종 저장 정보
+- GameVersion 필수 ManyToOne 관계
+- GameFile 필수 ManyToOne 관계
+- BaseTimeEntity의 createdAt을 이용한 다운로드 시작 가능 시각
+- BaseTimeEntity 상속에 따른 updatedAt
 
-IP 주소와 User-Agent는 개인정보 및 필요성을 검토한 후 추가 여부를 결정한다.
+Member, IP, User-Agent는 저장하지 않는다. GameVersion에 누적 downloadCount도 추가하지 않는다.
 
 ## 결정 이유
 - 전체 다운로드 수를 집계할 수 있다.
@@ -272,7 +278,9 @@ IP 주소와 User-Agent는 개인정보 및 필요성을 검토한 후 추가 �
 GameVersion에 `downloadCount` 숫자만 저장하는 방식
 
 ## 구현 후 보완
-최종 저장 컬럼과 인덱스를 작성한다.
+`download_histories` 테이블에 요청 1회당 1행을 저장한다.
+현재 DownloadHistoryRepository는 JpaRepository 기본 기능만 사용하며 통계 집계 쿼리와 인덱스 보완은 Step 6에서 검토한다.
+GameVersion 및 GameFile 관계에 cascade와 orphanRemoval은 설정하지 않는다.
 
 ---
 
@@ -295,13 +303,17 @@ HTTP 응답이 시작된 이후 사용자가 연결을 종료하면 파일 전�
 
 다운로드 통계는 파일 전송 완료 횟수가 아니라 유효한 다운로드 시작 횟수를 의미한다.
 
+이력 저장은 `FileStorage.open()`까지 성공한 뒤 정확히 한 번 시도한다. RELEASED 버전, GameFile 메타데이터, 물리 파일 또는 파일 open 단계가 실패하면 기록하지 않는다.
+
 ## 결정 이유
 - 존재하지 않는 파일 요청은 통계에 포함하지 않을 수 있다.
 - 일반적인 Spring MVC 구조에서 전송 완료 여부를 추적하는 복잡도를 줄일 수 있다.
 - 다운로드 집계 기준을 명확하게 설명할 수 있다.
 
 ## 구현 후 보완
-실제 서비스 메서드와 트랜잭션 범위를 작성한다.
+GameFileDownloadService는 읽기 전용 트랜잭션에서 다운로드 대상을 검증하고 파일을 연다.
+DownloadHistoryService.record는 `REQUIRES_NEW` 트랜잭션에서 `saveAndFlush()`한다.
+이력 저장 실패는 WARN 로그로 남기고 다운로드 흐름으로 전파하지 않는다. 따라서 DownloadHistory는 통계 정확성보다 다운로드 UX를 우선하는 best-effort 운영 데이터다.
 
 ---
 
@@ -470,10 +482,10 @@ MVP에서는 서버 로컬 디렉터리에 게임 파일을 저장한다.
 파일 저장 로직은 별도 컴포넌트로 분리하여 향후 S3로 교체할 수 있도록 한다.
 
 ## 구현 구조
-- `FileStorage`: `store`, `exists`, `delete`
-- `LocalFileStorage`: temp 파일, streaming, SHA-256, 실제 fileSize, 최대 크기, 안전한 경로 resolve, 덮어쓰기 방지, atomic move 우선 및 fallback, 실패 시 temp 정리, idempotent delete
+- `FileStorage`: `store`, `exists`, `open`, `delete`
+- `LocalFileStorage`: temp 파일, streaming 저장, SHA-256, 실제 fileSize, 최대 크기, 안전한 경로 resolve, 덮어쓰기 방지, atomic move 우선 및 fallback, 실패 시 temp 정리, idempotent delete, READ InputStream 생성
 - `FileStorageProperties`: 환경변수 기반 root, 최대 512 MiB, 64 KiB buffer
-- 향후 S3FileStorage로 교체할 수 있도록 Upload Service는 FileStorage 인터페이스에 의존한다. S3 구현은 현재 존재하지 않는다.
+- 향후 S3FileStorage로 교체할 수 있도록 업로드 및 다운로드 Service는 FileStorage 인터페이스에 의존한다. S3 구현은 현재 존재하지 않는다.
 
 ## 결정 이유
 - MVP 개발 속도를 높일 수 있다.

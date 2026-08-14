@@ -410,36 +410,37 @@ Error
 
 ### 최신 버전 정보 조회
 
-구현 예정: GameFile 연결 이후 최종 응답 계약과 함께 구현한다.
+권한: 비회원 포함 전체 사용자
 
-Request  `GET /api/game/versions/latest`
+Request  `GET /api/game-versions/latest`
 
 Response  `200 OK`
 
 ```json
 {
-    "versionId": 2,
+    "gameVersionId": 2,
     "version": "v1.1.0",
     "title": "정식 업데이트",
     "description": "신규 콘텐츠가 추가되었습니다.",
     "releasedAt": "2026-07-29T14:30:00",
-    "file": {
-        "originalFileName": "Jexon_Setup_1.1.0.zip",
-        "fileSize": 104857600,
-        "checksum": "sha256-checksum-value"
-    }
+    "gameFileId": 1,
+    "originalFileName": "Jexon_Setup_1.1.0.zip",
+    "fileSize": 104857600,
+    "checksum": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 }
 ```
 
+응답에는 storageKey, 실제 저장 경로, contentType, lockVersion, createdAt, updatedAt 및 ReleaseControl 정보를 포함하지 않는다.
+
 Error
 - 404: 배포 중인 버전 없음
-- 404: 연결된 파일 없음
+- 500: RELEASED 버전에 연결된 GameFile 메타데이터 없음
 
 ### 최신 버전 다운로드
 
-구현 예정: GameFile 및 다운로드 기능 구현 이후 제공한다.
+권한: 비회원 포함 전체 사용자
 
-Request  `GET /api/downloads/latest`
+Request  `GET /api/game-versions/latest/download`
 
 Response  `200 OK`
 
@@ -454,9 +455,18 @@ Body: 파일 바이너리 스트림
 
 Error
 - 404: 최신 버전 없음
-- 404: 파일 메타데이터 없음
-- 404: 실제 파일 없음
-- 500: 파일 읽기 실패
+- 500: RELEASED 버전의 GameFile 메타데이터 없음
+- 500: 실제 물리 파일 없음
+- 500: 잘못된 storageKey 또는 파일 읽기 실패
+
+정책
+- 현재 RELEASED 상태인 GameVersion 하나만 다운로드할 수 있다.
+- DRAFT와 INACTIVE 버전 다운로드 및 gameVersionId 지정 다운로드는 제공하지 않는다.
+- GameFile.originalFileName을 UTF-8 attachment 파일명으로 사용한다.
+- FileStorage에서 연 InputStream을 InputStreamResource로 스트리밍하며 파일 전체를 byte 배열에 적재하지 않는다.
+- storageKey와 실제 저장 경로는 노출하지 않는다.
+- 파일 open 성공 후 DownloadHistory 저장을 요청당 한 번 시도한다.
+- 이력 저장 실패는 WARN 로그로 남기고 다운로드는 계속한다.
 
 ---
 
@@ -833,6 +843,8 @@ Error
 
 ---
 ## 관리자 다운로드 통계 API
+
+Step 6 구현 예정이며 현재 제공하지 않는다.
 
 ### 통계 요약
 
