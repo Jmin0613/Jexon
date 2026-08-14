@@ -59,6 +59,25 @@ class LocalFileStorageTest {
     }
 
     @Test
+    void opensStoredFileAsStream() throws Exception {
+        LocalFileStorage storage = storage(1_024, 8);
+        byte[] content = "download content".getBytes(StandardCharsets.UTF_8);
+        storage.store("game-files/15/download.zip", new ByteArrayInputStream(content));
+
+        try (InputStream inputStream = storage.open("game-files/15/download.zip")) {
+            assertThat(inputStream.readAllBytes()).isEqualTo(content);
+        }
+    }
+
+    @Test
+    void rejectsOpeningMissingFile() {
+        LocalFileStorage storage = storage(1_024, 8);
+
+        assertThatThrownBy(() -> storage.open("game-files/15/missing.zip"))
+                .isInstanceOf(FileStorageException.class);
+    }
+
+    @Test
     void doesNotOverwriteExistingFile() throws Exception {
         LocalFileStorage storage = storage(1_024, 8);
         String storageKey = "game-files/15/existing.zip";
@@ -124,6 +143,8 @@ class LocalFileStorageTest {
         )).isInstanceOf(FileStorageException.class);
         assertThatThrownBy(() -> storage.exists("../../outside.zip"))
                 .isInstanceOf(FileStorageException.class);
+        assertThatThrownBy(() -> storage.open("../outside.zip"))
+                .isInstanceOf(FileStorageException.class);
         assertThatThrownBy(() -> storage.delete("../outside.zip"))
                 .isInstanceOf(FileStorageException.class);
     }
@@ -138,6 +159,8 @@ class LocalFileStorageTest {
                 new ByteArrayInputStream(new byte[]{1})
         )).isInstanceOf(FileStorageException.class);
         assertThatThrownBy(() -> storage.exists(absolutePath))
+                .isInstanceOf(FileStorageException.class);
+        assertThatThrownBy(() -> storage.open(absolutePath))
                 .isInstanceOf(FileStorageException.class);
         assertThatThrownBy(() -> storage.delete(absolutePath))
                 .isInstanceOf(FileStorageException.class);

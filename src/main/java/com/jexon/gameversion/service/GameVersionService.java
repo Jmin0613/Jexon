@@ -1,6 +1,8 @@
 package com.jexon.gameversion.service;
 
 import com.jexon.gamefile.repository.GameFileRepository;
+import com.jexon.gamefile.domain.GameFile;
+import com.jexon.gamefile.exception.GameFileStateException;
 import com.jexon.gameversion.domain.GameVersion;
 import com.jexon.gameversion.domain.GameVersionReleaseControl;
 import com.jexon.gameversion.domain.GameVersionStatus;
@@ -10,6 +12,7 @@ import com.jexon.gameversion.dto.response.GameVersionCreateResponse;
 import com.jexon.gameversion.dto.response.GameVersionDetailResponse;
 import com.jexon.gameversion.dto.response.GameVersionListResponse;
 import com.jexon.gameversion.dto.response.GameVersionReleaseResponse;
+import com.jexon.gameversion.dto.response.LatestGameVersionResponse;
 import com.jexon.gameversion.exception.DuplicateGameVersionException;
 import com.jexon.gameversion.exception.GameVersionConcurrencyConflictException;
 import com.jexon.gameversion.exception.GameVersionNotFoundException;
@@ -45,6 +48,16 @@ public class GameVersionService {
     private final GameVersionReleaseControlRepository releaseControlRepository;
     private final MemberRepository memberRepository;
     private final GameFileRepository gameFileRepository;
+
+    public LatestGameVersionResponse getLatestGameVersion() {
+        // 공식 배포 버전
+        GameVersion gameVersion = gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)
+                .orElseThrow(GameVersionNotFoundException::new);
+        GameFile gameFile = gameFileRepository.findByGameVersionId(gameVersion.getId())
+                .orElseThrow(GameFileStateException::new);
+
+        return LatestGameVersionResponse.of(gameVersion, gameFile);
+    }
 
     @Transactional
     public GameVersionCreateResponse create(

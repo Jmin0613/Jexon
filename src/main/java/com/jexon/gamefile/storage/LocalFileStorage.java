@@ -106,6 +106,17 @@ public class LocalFileStorage implements FileStorage {
         return Files.isRegularFile(target);
     }
 
+    @Override
+    public InputStream open(String storageKey) {
+        Path target = resolveSafely(storageKey);
+
+        try {
+            return Files.newInputStream(target, StandardOpenOption.READ);
+        } catch (IOException exception) {
+            throw new FileStorageException("게임 파일을 읽는 데 실패했습니다.", exception);
+        }
+    }
+
     // storageKey에 해당하는 실제 파일 삭제 (현재는 DB 실패 보상에 사용)
     @Override
     public void delete(String storageKey) {

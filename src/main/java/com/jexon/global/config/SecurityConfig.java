@@ -50,6 +50,13 @@ public class SecurityConfig {
                                 HttpMethod.GET, "/api/news", "/api/news/**"
                         ).permitAll()
 
+                        // GET latest 하나만 열기
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/game-versions/latest",
+                                "/api/game-versions/latest/download"
+                        ).permitAll()
+
                         // 관리자 전용
                         .requestMatchers("/api/admin/**")
                         .hasRole("ADMIN")

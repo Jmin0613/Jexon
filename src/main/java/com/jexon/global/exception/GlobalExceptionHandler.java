@@ -5,6 +5,7 @@ import com.jexon.comment.exception.CommentPermissionDeniedException;
 import com.jexon.gamefile.exception.DuplicateGameFileException;
 import com.jexon.gamefile.exception.FileStorageException;
 import com.jexon.gamefile.exception.InvalidGameFileException;
+import com.jexon.gamefile.exception.GameFileStateException;
 import com.jexon.gameversion.exception.DuplicateGameVersionException;
 import com.jexon.gameversion.exception.GameVersionConcurrencyConflictException;
 import com.jexon.gameversion.exception.GameVersionNotFoundException;
@@ -184,6 +185,16 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "파일 저장 중 오류가 발생했습니다."
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(GameFileStateException.class)
+    public ResponseEntity<ErrorResponse> handleGameFileState(GameFileStateException exception) {
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                exception.getMessage()
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
