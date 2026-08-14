@@ -190,6 +190,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
+    // RELEASED 버전에 연결된 GameFile이 없는 비정상 상태
     @ExceptionHandler(GameFileStateException.class)
     public ResponseEntity<ErrorResponse> handleGameFileState(GameFileStateException exception) {
         ErrorResponse response = new ErrorResponse(

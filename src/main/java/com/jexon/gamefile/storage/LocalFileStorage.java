@@ -106,11 +106,13 @@ public class LocalFileStorage implements FileStorage {
         return Files.isRegularFile(target);
     }
 
+    // storageKey에 해당하는 실제 파일의 읽기 스트림 반환
     @Override
     public InputStream open(String storageKey) {
-        Path target = resolveSafely(storageKey);
+        Path target = resolveSafely(storageKey); // storageKey를 실제 파일 경로로 변환
 
         try {
+            // 실제 파일의 읽기용 InputStream 반환
             return Files.newInputStream(target, StandardOpenOption.READ);
         } catch (IOException exception) {
             throw new FileStorageException("게임 파일을 읽는 데 실패했습니다.", exception);

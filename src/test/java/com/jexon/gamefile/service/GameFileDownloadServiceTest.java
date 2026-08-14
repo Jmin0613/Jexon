@@ -1,5 +1,6 @@
 package com.jexon.gamefile.service;
 
+import com.jexon.downloadhistory.service.DownloadHistoryService;
 import com.jexon.gamefile.domain.GameFile;
 import com.jexon.gamefile.dto.response.GameFileDownloadResponse;
 import com.jexon.gamefile.exception.FileStorageException;
@@ -24,8 +25,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +39,7 @@ class GameFileDownloadServiceTest {
     @Mock GameVersionRepository gameVersionRepository;
     @Mock GameFileRepository gameFileRepository;
     @Mock FileStorage fileStorage;
+    @Mock DownloadHistoryService downloadHistoryService;
     @InjectMocks GameFileDownloadService service;
 
     @Test
@@ -53,6 +58,7 @@ class GameFileDownloadServiceTest {
         assertThat(response.fileSize()).isEqualTo(1024L);
         assertThat(response.inputStream().readAllBytes()).isEqualTo(content);
         verify(fileStorage).open(STORAGE_KEY);
+        verify(downloadHistoryService, times(1)).record(gameVersion, gameFile);
     }
 
     @Test
@@ -61,6 +67,7 @@ class GameFileDownloadServiceTest {
 
         assertThatThrownBy(service::downloadLatest).isInstanceOf(GameVersionNotFoundException.class);
         verify(gameFileRepository, never()).findByGameVersionId(10L);
+        verify(downloadHistoryService, never()).record(any(), any());
     }
 
     @Test
@@ -71,6 +78,7 @@ class GameFileDownloadServiceTest {
 
         assertThatThrownBy(service::downloadLatest).isInstanceOf(GameFileStateException.class);
         verify(fileStorage, never()).exists(STORAGE_KEY);
+        verify(downloadHistoryService, never()).record(any(), any());
     }
 
     @Test
@@ -84,6 +92,37 @@ class GameFileDownloadServiceTest {
                 .isInstanceOf(FileStorageException.class)
                 .hasMessage("다운로드할 게임 파일이 존재하지 않습니다.");
         verify(fileStorage, never()).open(STORAGE_KEY);
+        verify(downloadHistoryService, never()).record(any(), any());
+    }
+
+    @Test
+    void doesNotRecordWhenOpeningPhysicalFileFails() {
+        GameVersion gameVersion = releasedGameVersion();
+        given(gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)).willReturn(Optional.of(gameVersion));
+        given(gameFileRepository.findByGameVersionId(10L)).willReturn(Optional.of(gameFile(gameVersion)));
+        given(fileStorage.exists(STORAGE_KEY)).willReturn(true);
+        given(fileStorage.open(STORAGE_KEY)).willThrow(new FileStorageException("open failed"));
+
+        assertThatThrownBy(service::downloadLatest).isInstanceOf(FileStorageException.class);
+        verify(downloadHistoryService, never()).record(any(), any());
+    }
+
+    @Test
+    void continuesDownloadWhenRecordingHistoryFails() throws Exception {
+        GameVersion gameVersion = releasedGameVersion();
+        GameFile gameFile = gameFile(gameVersion);
+        byte[] content = "download content".getBytes(StandardCharsets.UTF_8);
+        given(gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)).willReturn(Optional.of(gameVersion));
+        given(gameFileRepository.findByGameVersionId(10L)).willReturn(Optional.of(gameFile));
+        given(fileStorage.exists(STORAGE_KEY)).willReturn(true);
+        given(fileStorage.open(STORAGE_KEY)).willReturn(new ByteArrayInputStream(content));
+        doThrow(new RuntimeException("database unavailable"))
+                .when(downloadHistoryService).record(gameVersion, gameFile);
+
+        GameFileDownloadResponse response = service.downloadLatest();
+
+        assertThat(response.inputStream().readAllBytes()).isEqualTo(content);
+        verify(downloadHistoryService, times(1)).record(gameVersion, gameFile);
     }
 
     private static GameVersion releasedGameVersion() {

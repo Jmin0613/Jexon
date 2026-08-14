@@ -34,10 +34,13 @@ public class GameVersionController {
     // 최신 버전 다운로드
     @GetMapping("/latest/download")
     public ResponseEntity<InputStreamResource> downloadLatestGameVersion() {
+        // 다운로드 대상 검증 + 파일 스트림 준비 + 다운로드 이력 기록 시도
         GameFileDownloadResponse response = gameFileDownloadService.downloadLatest();
+
+        // 첨부파일 다운로드용 Content-Disposition 헤더 생성
         ContentDisposition contentDisposition = ContentDisposition.attachment()
                 .filename(response.originalFileName(), StandardCharsets.UTF_8) // 내부 UUID 파일명이 아니라 원본 파일명
-                .build();
+                .build(); // 파일스트림을 body에 넣기
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)

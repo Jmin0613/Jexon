@@ -50,7 +50,7 @@ public class SecurityConfig {
                                 HttpMethod.GET, "/api/news", "/api/news/**"
                         ).permitAll()
 
-                        // GET latest 하나만 열기
+                        // 공개 최신 버전 조회 및 다운로드 GET 허용
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/game-versions/latest",

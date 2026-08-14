@@ -49,8 +49,9 @@ public class GameVersionService {
     private final MemberRepository memberRepository;
     private final GameFileRepository gameFileRepository;
 
+    // 최신 배포 버전 조회
     public LatestGameVersionResponse getLatestGameVersion() {
-        // 공식 배포 버전
+        // 현재 공식 배포 중인 RELEASED 버전과 연결된 GameFile 조회
         GameVersion gameVersion = gameVersionRepository.findByStatus(GameVersionStatus.RELEASED)
                 .orElseThrow(GameVersionNotFoundException::new);
         GameFile gameFile = gameFileRepository.findByGameVersionId(gameVersion.getId())
