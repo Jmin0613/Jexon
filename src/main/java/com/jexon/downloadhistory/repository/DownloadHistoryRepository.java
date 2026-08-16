@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface DownloadHistoryRepository extends JpaRepository<DownloadHistory, Long> {
+    // 버전별 다운로드 조회
     @Query("""
             select dh.gameVersion.id as gameVersionId,
                    dh.gameVersion.version as version,
@@ -19,6 +20,7 @@ public interface DownloadHistoryRepository extends JpaRepository<DownloadHistory
             """)
     List<VersionDownloadStatisticsProjection> findVersionDownloadStatistics();
 
+    // 일별 다운로드 조회 (Native Query)
     @Query(value = """
             select date(dh.created_at) as date,
                    count(*) as downloadCount
@@ -27,4 +29,6 @@ public interface DownloadHistoryRepository extends JpaRepository<DownloadHistory
             order by date(dh.created_at) asc
             """, nativeQuery = true)
     List<DailyDownloadStatisticsProjection> findDailyDownloadStatistics();
+    // MySQL DATE()로 created_at의 날짜만 추출하여 집계
+
 }

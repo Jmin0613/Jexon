@@ -24,11 +24,13 @@ public class DownloadStatisticsService {
     private final DownloadHistoryRepository downloadHistoryRepository;
     private final MemberRepository memberRepository;
 
+    // 전체 다운로드 건수
     public DownloadSummaryResponse getSummary(Long memberId) {
         validateActiveAdmin(memberId);
         return DownloadSummaryResponse.of(downloadHistoryRepository.count());
     }
 
+    // 버전별 다운로드 통계
     public List<VersionDownloadStatisticsResponse> getVersionStatistics(Long memberId) {
         validateActiveAdmin(memberId);
         return downloadHistoryRepository.findVersionDownloadStatistics().stream()
@@ -36,6 +38,7 @@ public class DownloadStatisticsService {
                 .toList();
     }
 
+    // 일별 다운로드 통계
     public List<DailyDownloadStatisticsResponse> getDailyStatistics(Long memberId) {
         validateActiveAdmin(memberId);
         return downloadHistoryRepository.findDailyDownloadStatistics().stream()
@@ -43,6 +46,9 @@ public class DownloadStatisticsService {
                 .toList();
     }
 
+    // helper 메서드 -------------------------------------------------------------------------------
+
+    // DB 최신 상태 기준 ACTIVE + ADMIN 재검증
     private void validateActiveAdmin(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GameVersionPermissionDeniedException(DENIED_MESSAGE));

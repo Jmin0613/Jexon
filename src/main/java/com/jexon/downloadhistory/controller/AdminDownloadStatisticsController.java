@@ -20,6 +20,7 @@ import java.util.List;
 public class AdminDownloadStatisticsController {
     private final DownloadStatisticsService downloadStatisticsService;
 
+    // 전체 다운로드 통계
     @GetMapping("/summary")
     public ResponseEntity<DownloadSummaryResponse> getSummary(
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -29,6 +30,7 @@ public class AdminDownloadStatisticsController {
         );
     }
 
+    // 버전별 다운로드 통계
     @GetMapping("/versions")
     public ResponseEntity<List<VersionDownloadStatisticsResponse>> getVersionStatistics(
             @AuthenticationPrincipal CustomUserDetails userDetails
@@ -38,6 +40,7 @@ public class AdminDownloadStatisticsController {
         );
     }
 
+    // 일별 다운로드 통계
     @GetMapping("/daily")
     public ResponseEntity<List<DailyDownloadStatisticsResponse>> getDailyStatistics(
             @AuthenticationPrincipal CustomUserDetails userDetails
