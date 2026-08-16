@@ -559,7 +559,7 @@ Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동�
 
 ## 8. 게임 다운로드
 
-공개 최신 버전 조회, 실제 파일 스트리밍 다운로드 및 DownloadHistory 적재가 구현되어 있다. 관리자 통계 조회는 Step 6에서 구현한다.
+공개 최신 버전 조회, 실제 파일 스트리밍 다운로드, DownloadHistory 적재 및 관리자 통계 조회가 구현되어 있다.
 
 ### 8.1 최신 버전 조회
 
@@ -677,23 +677,49 @@ SUSPENDED 상태를 ACTIVE 상태로 변경한다.
 
 ## 11. 다운로드 통계
 
-Step 6 구현 예정 영역이다. 현재는 DownloadHistory 적재 기반만 제공하며 통계 조회 API와 집계 쿼리는 구현하지 않았다.
+Step 6에서 관리자용 전체/버전별/일별 다운로드 통계 API를 구현했다. 통계는 실제 DB에 저장된 DownloadHistory만 대상으로 하며, best-effort 이력 저장 실패가 발생하면 실제 다운로드 요청 수보다 작을 수 있다.
 
 ### 11.1 전체 다운로드 수
-DownloadHistory 전체 행 개수를 집계한다.
+`DownloadHistoryRepository.count()`로 DownloadHistory 전체 행 개수를 집계한다.
+
+이력이 없으면 `totalDownloads`는 0이다.
 
 ### 11.2 버전별 다운로드 수
-게임 버전별 DownloadHistory 행 개수를 집계한다.
+JPQL `COUNT`와 `GROUP BY`로 게임 버전별 DownloadHistory 행 개수를 DB에서 집계한다.
+
+반환 정보:
+- gameVersionId
+- version
+- status
+- downloadCount
+
+현재 RELEASED 버전만 제한하지 않으며, 다운로드 이력이 존재하는 과거 INACTIVE 버전도 포함한다. 이력이 있는 버전이 없으면 빈 목록을 반환한다.
 
 ### 11.3 일별 다운로드 수
-날짜별 DownloadHistory 행 개수를 집계한다.
+MySQL `DATE(created_at)` 기준 Native Query의 `COUNT`와 `GROUP BY`로 일별 DownloadHistory 행 개수를 DB에서 집계한다.
+
+반환 정보:
+- date
+- downloadCount
+
+기간 파라미터나 최근 일수 제한 없이 전체 기간을 조회한다. 이력이 없으면 빈 목록을 반환한다.
 
 ### 11.4 조회 권한
-관리자만 조회할 수 있다.
+세 API 모두 관리자 전용이다.
+
+- Spring Security의 `/api/admin/** -> hasRole("ADMIN")` 정책을 적용한다.
+- Controller는 `@AuthenticationPrincipal`에서 memberId를 얻어 Service에 전달한다.
+- Service는 DB의 최신 Member 상태가 ACTIVE이고 역할이 ADMIN인지 다시 검증한다.
+- 검증에 실패하면 기존 `GameVersionPermissionDeniedException` 정책으로 403을 반환한다.
 
 ### 11.5 정렬
-- 버전별 통계: 최신 버전 생성일 기준 내림차순
-- 일별 통계: 날짜 기준 오름차순 또는 내림차순 선택
+- 버전별 통계: `releasedAt DESC`
+- 일별 통계: `date ASC`
+
+### 11.6 집계 구현 정책
+- 전체 DownloadHistory Entity를 조회하여 Java에서 집계하지 않는다.
+- 버전별 통계는 `VersionDownloadStatisticsProjection`, 일별 통계는 `DailyDownloadStatisticsProjection`으로 필요한 값만 조회한다.
+- Projection 결과는 Service에서 Response DTO로 변환한다.
 
 ---
 
@@ -730,4 +756,5 @@ DownloadHistory 전체 행 개수를 집계한다.
 
 ### 성능
 - 게시글, 회원, 새소식, 관리자 게임 버전 목록은 페이징 처리한다.
-- DownloadHistory 통계용 인덱스와 집계 쿼리는 Step 6에서 검토한다.
+- DownloadHistory 통계는 DB의 COUNT/GROUP BY로 수행한다.
+- Step 6에서는 별도 인덱스를 추가하지 않았다. `game_version_id`는 MySQL FK 인덱스를 활용할 수 있으며, `created_at` 인덱스는 데이터 증가와 실행계획을 확인한 뒤 검토한다.

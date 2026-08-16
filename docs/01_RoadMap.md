@@ -214,7 +214,8 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - 회원 정지 및 해제
 - 게시글과 댓글 관리
 - 버전 및 파일 관리
-- 다운로드 통계
+- 전체/버전별/일별 다운로드 통계 API: 완료
+- 관리자 다운로드 통계 화면: 미구현
 
 ### 10단계. 프론트엔드
 - 공통 레이아웃
@@ -236,12 +237,13 @@ Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현
 - GameFile 필수 release 조건 테스트: 완료
 - Postman 업로드 수동 검증: 완료
 - Step 5 관련 Service, FileStorage, Controller 및 Security 테스트: 완료
-- 전체 자동 테스트 187개, failures 0, errors 0, skipped 4, BUILD SUCCESSFUL
-- Docker 미실행 환경에서는 Testcontainers 기반 테스트가 건너뛰어질 수 있음
+- Docker 실행 상태 전체 자동 테스트 196개, failures 0, errors 0, skipped 0, BUILD SUCCESSFUL
 - Postman에서 비로그인 최신 버전 조회 200, 공개 메타데이터 및 storageKey 비노출 확인: 완료
 - Postman에서 비로그인 실제 ZIP 스트리밍 다운로드 및 바이너리 저장 확인: 완료
 - 동일 다운로드 2회 요청 후 download_histories가 1행씩 총 2행으로 누적되고 GameVersion, GameFile, createdAt이 일치하는지 DB 확인: 완료
-- 다운로드 통계 테스트: Step 6 예정
+- 관리자 다운로드 통계 Service 및 Controller 테스트: 완료
+- MySQL Testcontainers 기반 버전별/일별 GROUP BY 및 정렬 통합 테스트: 완료
+- Postman과 실제 MySQL DB에서 전체 2건, v1.5.0 2건, 2026-08-15 2건 집계 일치 확인: 완료
 
 ### 12단계. 배포 및 문서화
 - Docker 설정
@@ -352,7 +354,7 @@ Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
 - 정상 다운로드 요청별 이력 적재: 완료
 - 이력 저장 실패 시 다운로드 계속 처리: 완료
 - 관련 자동 테스트 및 Postman/DB 수동 검증: 완료
-- 관리자 다운로드 통계 조회: Step 6 예정
+- 관리자 다운로드 통계 조회: Step 6 완료
 - 실제 물리 파일 release 재검증: 미구현
 
 ### Step 4 이후 확장 예정
@@ -361,10 +363,14 @@ Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
 - background orphan cleanup
 
 ### Step 6
-- 관리자 기능
-- 전체/버전별/일별 다운로드 통계 API
-- 관리자 다운로드 통계 화면
-- 프론트엔드 연동
+- 관리자 전체 다운로드 통계 API: 완료
+- 관리자 버전별 다운로드 통계 API: 완료
+- 관리자 일별 다운로드 통계 API: 완료
+- DB COUNT/GROUP BY 및 Projection 기반 집계: 완료
+- ACTIVE ADMIN 권한 재검증: 완료
+- Docker 기반 자동 테스트 및 Postman/DB 수동 검증: 완료
+- 관리자 다운로드 통계 화면: 미구현
+- 프론트엔드 연동: 미구현
 
 ### Step 7
 - 테스트

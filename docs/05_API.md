@@ -842,9 +842,11 @@ Error
 - 500: 실제 파일 삭제 실패
 
 ---
-## 관리자 다운로드 통계 API
+## 10. 관리자 다운로드 통계 API
 
-Step 6 구현 예정이며 현재 제공하지 않는다.
+권한: ACTIVE 상태의 ADMIN
+
+세 API 모두 Spring Security의 `/api/admin/**` 관리자 정책과 Service의 최신 ACTIVE ADMIN 상태 재검증을 적용한다.
 
 ### 통계 요약
 
@@ -853,63 +855,64 @@ Request `GET /api/admin/download-statistics/summary`
 Response  `200 OK`
 ```json
 {
-    "totalDownloads": 1500,
-    "latestVersion": "1.1.0",
-    "latestVersionDownloads": 500
+    "totalDownloads": 2
 }
 ```
 
+DownloadHistory가 없으면 `totalDownloads`는 0이다.
+
 ### 버전별 통계
 
-Request  `GET /api/admin/download-statistics/by-version`
+Request  `GET /api/admin/download-statistics/versions`
 
 Response `200 OK`
 ```json
 [
     {
-        "gameVersionId": 2,
-        "version": "1.1.0",
+        "gameVersionId": 3,
+        "version": "v1.5.0",
         "status": "RELEASED",
-        "downloadCount": 500
-    },
-    {
-        "gameVersionId": 1,
-        "version": "1.0.0",
-        "status": "INACTIVE",
-        "downloadCount": 1000
+        "downloadCount": 2
     }
 ]
 ```
+
+정책
+- 다운로드 이력이 존재하는 버전만 반환한다.
+- 과거 INACTIVE 버전도 포함한다.
+- `releasedAt DESC`로 정렬한다.
+- 데이터가 없으면 `[]`를 반환한다.
 
 ### 일별 통계
 
 Request  `GET /api/admin/download-statistics/daily`
 
-Query Parameters
-
-| 이름        | 필수 | 설명                 |
-| --------- | -: | ------------------ |
-| startDate |  N | 조회 시작일, YYYY-MM-DD |
-| endDate   |  N | 조회 종료일, YYYY-MM-DD |
-
 Response  `200 OK`
 ```json
 [
     {
-        "date": "2026-07-28",
-        "downloadCount": 100
-    },
-    {
-        "date": "2026-07-29",
-        "downloadCount": 150
+        "date": "2026-08-15",
+        "downloadCount": 2
     }
 ]
 ```
 
+정책
+- 기간 파라미터 없이 전체 DownloadHistory 기간을 조회한다.
+- `date ASC`로 정렬한다.
+- 데이터가 없으면 `[]`를 반환한다.
+
 Error
-- 400: 날짜 형식 오류
-- 400: 시작일이 종료일보다 늦음
+- 401: 로그인 필요
 - 403: 관리자 권한 없음
+
+### Step 6 검증 결과
+
+- Docker 실행 상태 전체 자동 테스트 196개 성공, 실패 0, 오류 0, skip 0
+- MySQL Testcontainers에서 버전별 GROUP BY와 `releasedAt DESC` 정렬 검증
+- MySQL Testcontainers에서 `DATE(created_at)` 일별 GROUP BY와 `date ASC` 정렬 검증
+- 실제 DB의 DownloadHistory는 총 2건이며 모두 game_version_id 3, 2026-08-15 생성 데이터임을 확인
+- Postman에서 summary의 totalDownloads 2, versions의 v1.5.0 RELEASED 2건, daily의 2026-08-15 2건이 DB와 일치함을 확인
 
 ---
 

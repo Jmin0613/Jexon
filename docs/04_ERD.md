@@ -271,7 +271,7 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 - cascade와 orphanRemoval은 설정하지 않는다.
 
 ### 인덱스
-현재 별도 인덱스는 추가하지 않았다. Step 6 통계 쿼리 구현 시 game_version_id와 created_at 기반 인덱스를 검토한다.
+Step 6에서도 별도 통계 인덱스는 추가하지 않았다. `game_version_id`는 현재 MySQL FK 인덱스를 활용할 수 있다. `created_at` 기반 일별 집계 인덱스는 DownloadHistory 데이터 증가와 실행계획을 확인한 뒤 추가 여부를 검토한다.
 
 ---
 
@@ -423,4 +423,4 @@ erDiagram
 - 게시글 조회 수 동시 증가 방식
 - 향후 GameFile 교체 및 삭제 정책
 - 실제 물리 파일 release 재검증 방식
-- Step 6 DownloadHistory 통계 쿼리 및 인덱스
+- DownloadHistory 증가 시 created_at 기반 일별 통계 인덱스 필요 여부

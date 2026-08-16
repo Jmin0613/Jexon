@@ -279,8 +279,19 @@ GameVersion에 `downloadCount` 숫자만 저장하는 방식
 
 ## 구현 후 보완
 `download_histories` 테이블에 요청 1회당 1행을 저장한다.
-현재 DownloadHistoryRepository는 JpaRepository 기본 기능만 사용하며 통계 집계 쿼리와 인덱스 보완은 Step 6에서 검토한다.
 GameVersion 및 GameFile 관계에 cascade와 orphanRemoval은 설정하지 않는다.
+
+Step 6 관리자 통계는 DownloadHistory 전체 Entity를 메모리에 적재하지 않고 DB에서 직접 집계한다.
+
+- 전체 다운로드 수는 `JpaRepository.count()`를 사용한다.
+- 버전별 다운로드 수는 JPQL `COUNT`와 `GROUP BY`를 사용하고 `VersionDownloadStatisticsProjection`으로 필요한 값만 조회한다.
+- 일별 다운로드 수는 MySQL `DATE(created_at)` 기준의 Native Query로 `COUNT`와 `GROUP BY`를 수행하고 `DailyDownloadStatisticsProjection`으로 조회한다.
+- Projection 결과는 Service에서 Response DTO로 변환한다.
+- 버전별 결과는 `releasedAt DESC`, 일별 결과는 `date ASC`로 DB에서 정렬한다.
+
+일별 집계는 MySQL 날짜 함수가 필요하고 이를 JPQL만으로 표현하면 불필요하게 복잡해지므로 해당 쿼리에만 Native Query를 선택했다.
+
+이번 단계에서는 별도 통계 인덱스를 추가하지 않았다. `game_version_id`는 현재 MySQL FK 인덱스를 활용할 수 있고 데이터 규모도 작다. `created_at` 기반 인덱스는 DownloadHistory 증가 후 실제 실행계획을 확인하여 추가 여부를 결정한다.
 
 ---
 
@@ -420,7 +431,8 @@ USER와 ADMIN은 권한을 나타내며, 회원의 정상 이용 여부와는 �
 - API 문서의 가독성을 높일 수 있다.
 
 ## 구현 후 보완
-Spring Security 권한 검사 방식을 작성한다.
+Spring Security에서 `/api/admin/**`에 `hasRole("ADMIN")`을 적용한다.
+관리자 다운로드 통계 Controller는 `@AuthenticationPrincipal`의 memberId를 Service에 전달하고, Service는 DB에서 최신 Member를 조회하여 ACTIVE + ADMIN 상태를 다시 검증한다.
 
 ---
 
