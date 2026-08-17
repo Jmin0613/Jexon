@@ -66,6 +66,10 @@ export default function MainLayout() {
       <main className="main-content">
         <Outlet />
       </main>
+      <footer className="site-footer">
+        <strong>Jexon</strong>
+        <span>Game distribution portfolio project</span>
+      </footer>
     </div>
   )
 }
