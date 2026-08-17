@@ -29,6 +29,15 @@ async function request(path, options) {
   if (!response.ok) {
     const error = new Error(`API request failed: ${response.status}`)
     error.status = response.status
+
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      try {
+        error.response = await response.json()
+      } catch {
+        error.response = null
+      }
+    }
+
     throw error
   }
 

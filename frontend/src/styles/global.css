@@ -38,6 +38,7 @@ a {
 
 .main-nav,
 .admin-nav {
+  align-items: center;
   display: flex;
   gap: 1rem;
 }
@@ -52,6 +53,116 @@ a {
 .admin-nav a:hover,
 .admin-nav a.active {
   color: #ffffff;
+}
+
+.user-nickname {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.logout-button {
+  padding: 0;
+  border: 0;
+  color: #cbd5e1;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.logout-button:hover {
+  color: #ffffff;
+}
+
+.logout-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.header-error {
+  color: #fecaca;
+  font-size: 0.875rem;
+}
+
+.auth-page {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.auth-form h1 {
+  margin: 0 0 0.5rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font: inherit;
+}
+
+.auth-form input:focus {
+  border-color: #2563eb;
+  outline: 2px solid #bfdbfe;
+}
+
+.form-error,
+.form-success {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.form-error {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.form-success {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.submit-button {
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  background: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.submit-button:disabled {
+  cursor: wait;
+  background: #94a3b8;
+}
+
+.auth-help {
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+
+.auth-help a {
+  color: #2563eb;
+  font-weight: 600;
 }
 
 .main-content,
