@@ -159,6 +159,117 @@ a {
   color: #b91c1c;
 }
 
+.news-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.news-list {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.news-list-header,
+.news-list-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 140px;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.news-list-header {
+  color: #475569;
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.news-list-row + .news-list-row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.news-list-row a {
+  font-weight: 600;
+}
+
+.news-list-row a:hover {
+  color: #2563eb;
+}
+
+.news-list-row time,
+.news-dates {
+  color: #64748b;
+}
+
+.news-type {
+  color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pagination button,
+.back-link {
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1f2937;
+  font: inherit;
+}
+
+.pagination button:not(:disabled) {
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.news-detail {
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.news-detail-header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.news-detail-header h1 {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.news-dates {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.news-content {
+  min-height: 180px;
+  padding: 2rem 0;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.back-link {
+  display: inline-block;
+}
+
 .download-button:disabled {
   cursor: not-allowed;
   background: #94a3b8;
@@ -200,5 +311,23 @@ a {
   .version-details > div {
     grid-template-columns: 1fr;
     gap: 0.25rem;
+  }
+
+  .news-list-header {
+    display: none;
+  }
+
+  .news-list-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .news-dates {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .news-detail {
+    padding: 1.25rem;
   }
 }
