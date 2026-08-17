@@ -9,6 +9,8 @@ import AdminNewsPage from '../pages/admin/AdminNewsPage.jsx'
 import LoginPage from '../pages/auth/LoginPage.jsx'
 import SignupPage from '../pages/auth/SignupPage.jsx'
 import PostDetailPage from '../pages/community/PostDetailPage.jsx'
+import PostCreatePage from '../pages/community/PostCreatePage.jsx'
+import PostEditPage from '../pages/community/PostEditPage.jsx'
 import PostListPage from '../pages/community/PostListPage.jsx'
 import DownloadPage from '../pages/game/DownloadPage.jsx'
 import HomePage from '../pages/HomePage.jsx'
@@ -24,6 +26,8 @@ export default function AppRoutes() {
         <Route path="news" element={<NewsListPage />} />
         <Route path="news/:newsId" element={<NewsDetailPage />} />
         <Route path="posts" element={<PostListPage />} />
+        <Route path="posts/new" element={<PostCreatePage />} />
+        <Route path="posts/:postId/edit" element={<PostEditPage />} />
         <Route path="posts/:postId" element={<PostDetailPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />

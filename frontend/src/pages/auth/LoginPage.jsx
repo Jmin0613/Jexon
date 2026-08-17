@@ -42,6 +42,9 @@ export default function LoginPage() {
         {location.state?.signupSuccess && (
           <p className="form-success">회원가입이 완료되었습니다. 로그인해주세요.</p>
         )}
+        {location.state?.authRequired && (
+          <p className="form-error">로그인이 필요한 기능입니다.</p>
+        )}
         {error && <p className="form-error" role="alert">{error}</p>}
 
         <label>

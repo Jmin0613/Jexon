@@ -1,6 +1,7 @@
 package com.jexon.auth.controller;
 
 import com.jexon.auth.principal.CustomUserDetails;
+import com.jexon.auth.dto.response.CurrentUserResponse;
 import com.jexon.auth.service.AuthService;
 import com.jexon.auth.dto.request.LoginRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,8 +20,8 @@ public class AuthController {
 
     // 로그인 상태 확인
     @GetMapping("/me")
-    public ResponseEntity<Long> me(@AuthenticationPrincipal CustomUserDetails userDetails){
-        return ResponseEntity.ok(userDetails.getMemberId());
+    public ResponseEntity<CurrentUserResponse> me(@AuthenticationPrincipal CustomUserDetails userDetails){
+        return ResponseEntity.ok(CurrentUserResponse.from(userDetails));
     }
 
     // 로그인

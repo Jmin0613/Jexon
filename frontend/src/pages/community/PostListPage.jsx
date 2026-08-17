@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getPosts } from '../../api/postApi.js'
+import { useAuth } from '../../auth/AuthContext.jsx'
 import { formatDate } from '../../utils/formatDate.js'
 
 export default function PostListPage() {
+  const { user, loading: authLoading } = useAuth()
   const [postsPage, setPostsPage] = useState(null)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,10 @@ export default function PostListPage() {
 
   return (
     <section className="community-page">
-      <h1>커뮤니티</h1>
+      <div className="page-heading">
+        <h1>커뮤니티</h1>
+        {!authLoading && user && <Link className="primary-link" to="/posts/new">글쓰기</Link>}
+      </div>
 
       {loading && (
         <p className="status-message" role="status">

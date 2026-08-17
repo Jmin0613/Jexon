@@ -1,6 +1,7 @@
 package com.jexon.auth.principal;
 
 import com.jexon.member.domain.Member;
+import com.jexon.member.domain.MemberRole;
 import com.jexon.member.domain.MemberStatus;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
@@ -61,5 +62,13 @@ public class CustomUserDetails implements UserDetails {
 
     public Long getMemberId() {
         return member.getId();
+    }
+
+    public String getNickname() {
+        return member.getNickname();
+    }
+
+    public MemberRole getRole() {
+        return member.getRole();
     }
 }

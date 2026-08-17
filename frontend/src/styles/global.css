@@ -386,6 +386,106 @@ a {
   margin: 0 auto;
 }
 
+.page-heading,
+.detail-actions,
+.form-actions,
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-heading {
+  justify-content: space-between;
+}
+
+.primary-link,
+.secondary-link,
+.cancel-link,
+.danger-button,
+.small-button,
+.small-primary-button,
+.small-danger-button {
+  padding: 0.6rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1f2937;
+  cursor: pointer;
+  font: inherit;
+}
+
+.primary-link,
+.small-primary-button {
+  border-color: #2563eb;
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.danger-button,
+.small-danger-button {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff7f7;
+}
+
+.danger-button:disabled,
+.small-button:disabled,
+.small-primary-button:disabled,
+.small-danger-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.post-form {
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.post-form h1 {
+  margin: 0 0 0.5rem;
+}
+
+.post-form label,
+.comment-form {
+  display: grid;
+  gap: 0.5rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.post-form input,
+.post-form textarea,
+.comment-form textarea,
+.comment-edit textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  resize: vertical;
+  font: inherit;
+}
+
+.post-form input:focus,
+.post-form textarea:focus,
+.comment-form textarea:focus,
+.comment-edit textarea:focus {
+  border-color: #2563eb;
+  outline: 2px solid #bfdbfe;
+}
+
+.form-actions {
+  justify-content: flex-end;
+}
+
+.detail-actions {
+  flex-wrap: wrap;
+}
+
 .post-list {
   overflow: hidden;
   border: 1px solid #e2e8f0;
@@ -469,6 +569,29 @@ a {
   margin-top: 0;
 }
 
+.comment-form {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.comment-form .submit-button {
+  justify-self: end;
+}
+
+.login-notice {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.login-notice a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
 .comment + .comment {
   border-top: 1px solid #e2e8f0;
 }
@@ -486,6 +609,24 @@ a {
 .comment-dates {
   display: flex;
   gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.comment-edit {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.comment-actions {
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.small-button,
+.small-primary-button,
+.small-danger-button {
+  padding: 0.4rem 0.7rem;
   font-size: 0.875rem;
 }
 
@@ -578,6 +719,24 @@ a {
   .post-detail,
   .comments-section {
     padding: 1.25rem;
+  }
+
+  .post-form {
+    padding: 1.25rem;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+  }
+
+  .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .form-actions .submit-button,
+  .form-actions .cancel-link {
+    text-align: center;
   }
 
   .comment header {
