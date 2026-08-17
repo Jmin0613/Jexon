@@ -270,6 +270,130 @@ a {
   display: inline-block;
 }
 
+.community-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.post-list {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.post-list-header,
+.post-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 140px;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.post-list-header {
+  color: #475569;
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.post-list-row + .post-list-row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.post-list-row a {
+  font-weight: 600;
+}
+
+.post-list-row a:hover {
+  color: #2563eb;
+}
+
+.post-list-row time,
+.post-meta,
+.comment time {
+  color: #64748b;
+}
+
+.post-detail {
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.post-detail-header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.post-detail-header h1 {
+  margin-top: 0;
+}
+
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.post-content {
+  min-height: 180px;
+  padding: 2rem 0;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comments-section {
+  margin-top: 2rem;
+  padding: 1.5rem 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.comments-section h2 {
+  margin-top: 0;
+}
+
+.comment + .comment {
+  border-top: 1px solid #e2e8f0;
+}
+
+.comment {
+  padding: 1.25rem 0;
+}
+
+.comment header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.comment-dates {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.comment p {
+  margin: 0.75rem 0 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comment-status {
+  padding: 1rem 0;
+  color: #64748b;
+}
+
+.comment-error {
+  color: #b91c1c;
+}
+
 .download-button:disabled {
   cursor: not-allowed;
   background: #94a3b8;
@@ -329,5 +453,30 @@ a {
 
   .news-detail {
     padding: 1.25rem;
+  }
+
+  .post-list-header {
+    display: none;
+  }
+
+  .post-list-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .post-detail,
+  .comments-section {
+    padding: 1.25rem;
+  }
+
+  .comment header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .comment-dates {
+    flex-direction: column;
+    gap: 0.25rem;
   }
 }
