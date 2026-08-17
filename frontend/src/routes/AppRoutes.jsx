@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import AdminLayout from '../layouts/AdminLayout.jsx'
+import AdminRoute from './AdminRoute.jsx'
 import MainLayout from '../layouts/MainLayout.jsx'
 import AdminDownloadStatisticsPage from '../pages/admin/AdminDownloadStatisticsPage.jsx'
 import AdminGameVersionsPage from '../pages/admin/AdminGameVersionsPage.jsx'
@@ -33,12 +34,14 @@ export default function AppRoutes() {
         <Route path="signup" element={<SignupPage />} />
       </Route>
 
-      <Route path="admin" element={<AdminLayout />}>
-        <Route index element={<AdminHomePage />} />
-        <Route path="members" element={<AdminMembersPage />} />
-        <Route path="game-versions" element={<AdminGameVersionsPage />} />
-        <Route path="news" element={<AdminNewsPage />} />
-        <Route path="download-statistics" element={<AdminDownloadStatisticsPage />} />
+      <Route element={<AdminRoute />}>
+        <Route path="admin" element={<AdminLayout />}>
+          <Route index element={<AdminHomePage />} />
+          <Route path="members" element={<AdminMembersPage />} />
+          <Route path="game-versions" element={<AdminGameVersionsPage />} />
+          <Route path="news" element={<AdminNewsPage />} />
+          <Route path="download-statistics" element={<AdminDownloadStatisticsPage />} />
+        </Route>
       </Route>
     </Routes>
   )

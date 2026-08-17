@@ -14,6 +14,9 @@ import com.jexon.gameversion.exception.InvalidGameVersionStateException;
 import com.jexon.global.exception.dto.ErrorResponse;
 import com.jexon.news.exception.NewsNotFoundException;
 import com.jexon.news.exception.NewsPermissionDeniedException;
+import com.jexon.member.exception.InvalidMemberStatusException;
+import com.jexon.member.exception.MemberNotFoundException;
+import com.jexon.member.exception.MemberPermissionDeniedException;
 import com.jexon.post.exception.PostNotFoundException;
 import com.jexon.post.exception.PostPermissionDeniedException;
 import org.springframework.http.HttpStatus;
@@ -25,6 +28,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(MemberNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMemberNotFound(MemberNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(HttpStatus.NOT_FOUND.value(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(MemberPermissionDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleMemberPermissionDenied(MemberPermissionDeniedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(HttpStatus.FORBIDDEN.value(), exception.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidMemberStatusException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMemberStatus(InvalidMemberStatusException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(HttpStatus.CONFLICT.value(), exception.getMessage()));
+    }
+
     // 로그인 실패
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException exception){

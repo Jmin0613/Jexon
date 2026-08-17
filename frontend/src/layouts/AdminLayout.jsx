@@ -18,6 +18,7 @@ export default function AdminLayout() {
             <NavLink key={to} to={to} end={end}>{label}</NavLink>
           ))}
         </nav>
+        <NavLink className="admin-site-link" to="/">일반 사이트로 이동</NavLink>
       </aside>
       <main className="admin-content">
         <Outlet />

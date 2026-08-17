@@ -81,4 +81,18 @@ public class Member extends BaseTimeEntity {
         return new Member(loginId, encodedPassword, nickname, email, name, phoneNumber);
     }
 
+    public void suspend() {
+        if (status != MemberStatus.ACTIVE) {
+            throw new IllegalStateException("ACTIVE 회원만 정지할 수 있습니다.");
+        }
+        status = MemberStatus.SUSPENDED;
+    }
+
+    public void activate() {
+        if (status != MemberStatus.SUSPENDED) {
+            throw new IllegalStateException("SUSPENDED 회원만 정지를 해제할 수 있습니다.");
+        }
+        status = MemberStatus.ACTIVE;
+    }
+
 }
