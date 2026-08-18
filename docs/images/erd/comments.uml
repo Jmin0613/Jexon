@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>DATABASE</ID>
+  <OriginalElement>34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.comments</OriginalElement>
+  <nodes>
+    <node x="-322.36956521739114" y="324.804347826087">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.comments</node>
+    <node x="316.0434782608696" y="-281.195652173913">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_versions</node>
+    <node x="-237.98695652173922" y="-281.195652173913">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.members</node>
+    <node x="652.9466086956519" y="116.85130434782604">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_version_release_control</node>
+    <node x="-1.4034782608695195" y="81.804347826087">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.news</node>
+    <node x="375.2841739130437" y="49.9278260869566">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_files</node>
+    <node x="-322.36956521739114" y="86.86486678260874">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.posts</node>
+    <node x="334.3048695652175" y="429.7608695652175">34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.download_histories</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.comments" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.members" relationship="REFERENCES">
+      <point x="3.025033182609036" y="89.27628299130407" />
+      <point x="-236.8445320347821" y="533.0156521739132" />
+      <point x="-94.48695652173922" y="533.0156521739132" />
+      <point x="0.0" y="152.5" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.comments" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.posts" relationship="REFERENCES">
+      <point x="0.2549261913046621" y="-33.608667826087185" />
+      <point x="-239.61463902608648" y="295.804347826087" />
+      <point x="-239.86956521739114" y="295.804347826087" />
+      <point x="0.0" y="92.5" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.download_histories" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_versions" relationship="REFERENCES">
+      <point x="-23.651915130434872" y="-13.666409739130586" />
+      <point x="396.1529544347826" y="399.22932869565204" />
+      <point x="330.26078052173915" y="399.22932869565204" />
+      <point x="-111.78269773913047" y="97.4431554782611" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.download_histories" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_files" relationship="REFERENCES">
+      <point x="-0.47269565217413856" y="-79.36486956521765" />
+      <point x="419.33217391304333" y="547.5857391304351" />
+      <point x="478.2841739130437" y="547.5857391304351" />
+      <point x="0.0" y="140.5" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.news" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.members" relationship="REFERENCES">
+      <point x="0.0" y="-104.5" />
+      <point x="125.59652173913048" y="58.88359513043483" />
+      <point x="-94.48695652173922" y="58.88359513043483" />
+      <point x="0.0" y="152.5" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.posts" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.members" relationship="REFERENCES">
+      <point x="0.0" y="-92.5" />
+      <point x="-239.86956521739114" y="58.35826086956524" />
+      <point x="-94.48695652173922" y="58.35826086956524" />
+      <point x="0.0" y="152.5" />
+    </edge>
+    <edge source="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_files" target="34465038-6520-472d-968d-1877b8d8fb8b.TABLE:jexon.game_versions" relationship="REFERENCES">
+      <point x="0.0" y="-140.5" />
+      <point x="478.2841739130437" y="150.47826086956525" />
+      <point x="442.0434782608696" y="150.47826086956525" />
+      <point x="0.0" y="128.5" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Compact" zoom="0.7770270270270278" showDependencies="false" x="361.27826086956463" y="92.40869565217338" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Columns</Category>
+    <Category>Comments</Category>
+    <Category>Key columns</Category>
+    <Category>Virtual foreign keys</Category>
+  </Categories>
+</Diagram>
+
