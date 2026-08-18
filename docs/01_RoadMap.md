@@ -1,395 +1,113 @@
 # Jexon 프로젝트 개발 로드맵
 
----
-
 ## 1. 프로젝트 개요
 
-### 프로젝트 명 :  Jexon
-### 프로젝트 형태 : 하나의 게임을 소개하고 배포하는 공식 홈페이지
+Jexon은 하나의 게임을 소개하고 실제 ZIP 파일을 배포하는 공식 홈페이지다. Spring Boot 백엔드, React/Vite 프론트엔드, MySQL, Nginx를 하나의 서비스로 통합했으며 AWS EC2에서 Docker Compose로 운영한다.
 
-### 프로젝트 목적 :
-Spring Boot 기반 백엔드 포트폴리오 프로젝트로, 단순 CRUD 구현을 넘어 다음 기능을 중심으로 설계하고 구현하는 것을 목적으로 함.
+## 2. 최종 완료 상태
 
-- 실제 게임 파일과 DB 메타데이터 분리
-- 게임 버전별 파일 관리
-- 최신 배포 버전 변경
-- 실제 저장 경로를 노출하지 않는 파일 다운로드
-- 다운로드 이력 및 통계 관리
-- 회원 커뮤니티 및 관리자 운영 기능
-- Codex를 활용한 AI 보조 개발 경험
+- Backend 핵심 기능과 Frontend 전체 연결 완료
+- 비회원/USER/ADMIN 전체 수동 통합 테스트 완료
+- 백엔드 자동 테스트와 frontend production build 성공
+- Docker Compose 운영 구성 및 로컬 production 검증 완료
+- AWS EC2 배포, Elastic IP 적용, 배포 환경 기능 검증 완료
+- Docker 재기동과 `down` 후 `up`에서 DB 및 게임 파일 영속성 검증 완료
+- Windows executable을 포함한 약 47MB Jexon Dino ZIP을 실제 배포할 수 있는 상태
+- Jexon Dino Home UI와 이미지 assets 적용 완료
 
----
-
-## 2. 주요 사용자
+## 3. 사용자별 완료 기능
 
 ### 비회원
-- 게임 소개 조회
-- 새소식 및 패치노트 조회
-- 커뮤니티 게시글 및 댓글 조회
-- 최신 게임 버전 다운로드
 
-### 회원
-- 비회원 기능 전체
-- 회원가입
-- 로그인 및 로그아웃
-- 게시글 작성, 수정, 삭제
-- 댓글 작성, 수정, 삭제
-- 마이페이지 조회 및 수정
+- Home, Download, News, Community 목록·상세 접근
+- 최신 RELEASED 버전 조회와 실제 ZIP 스트리밍 다운로드
+- 게시글별 댓글 조회
 
-### 관리자
-- 회원 목록 조회
-- 회원 검색
-- 회원 정지 및 정지 해제
-- 게시글과 댓글 관리
-- 새소식 및 패치노트 관리
-- 게임 버전 등록
-- 게임 파일 업로드
-- 최신 버전 변경
-- 다운로드 통계 조회
+### USER
 
----
+- 회원가입, 로그인, 새로고침 후 세션 유지, 로그아웃
+- 게시글과 댓글 작성·본인 수정·본인 삭제
+- 관리자 화면 차단
 
-## 3. 핵심 기술 목표
+### ADMIN
 
-### 3.1 파일과 DB 메타데이터 분리
-실제 게임 파일은 서버의 파일 저장소에 저장하고, DB에는 다음 메타데이터만 저장한다.
+- ACTIVE/SUSPENDED 상태별 회원 목록, 정지·해제
+- GameVersion 생성·수정·목록·상세·release와 ZIP 업로드
+- 새소식 공동 CRUD
+- 전체·버전별·일별 다운로드 통계 조회
+- 게시글·댓글 관리자 삭제
 
-- 원본 파일명
-- 서버 저장 파일명
-- 파일 저장 경로
-- 파일 크기
-- 파일 확장자
-- 체크섬
-- 업로드 일시
+## 4. 단계별 결과
 
-### 3.2 게임 버전 관리
-관리자는 버전을 등록하고 파일을 연결할 수 있다.
+| 단계 | 결과 |
+| --- | --- |
+| 1. 기획·설계 | 완료 |
+| 2. 기반 설정·MySQL·예외·JPA | 완료 |
+| 3. 세션 인증·회원 | 회원가입/로그인/로그아웃/`/api/auth/me` 및 USER/ADMIN, 상태 검증 완료 |
+| 4. 커뮤니티·새소식 | 게시글/댓글 CRUD, 공개 News와 관리자 News CRUD 완료 |
+| 5. 버전·파일 | 상태 흐름, 단일 ZIP, LocalFileStorage, release 동시성 제어 완료 |
+| 6. 다운로드·통계 | 실제 streaming, best-effort DownloadHistory, 전체/버전별/일별 backend 및 관리자 화면 완료 |
+| 7. Frontend | React/Vite 전체 API 연결, 인증 Context, AdminRoute, Jexon Dino Home 완료 |
+| 8. 검증 | 자동 테스트, production build, 전체 수동 통합 테스트 완료 |
+| 9. 운영 배포 | Docker Compose 로컬 검증, AWS EC2/Elastic IP HTTP 배포 완료 |
+| 10. 문서화 | 최종 구현 기준 docs 동기화 완료, README는 다음 작업 |
 
-게임 버전은 다음 상태를 가진다.
-- DRAFT: 등록되었지만 배포되지 않은 상태
-- RELEASED: 현재 사용자에게 배포 중인 최신 버전
-- INACTIVE: 이전 버전 또는 배포가 종료된 상태
+## 5. 최종 검증 요약
 
-(RELEASED 상태의 버전은 항상 하나만 존재하도록 한다.)
+### 자동 검증
 
-### 3.3 안전한 다운로드
-사용자는 실제 파일 경로에 직접 접근하지 않는다.
+- Backend: `./gradlew test --rerun-tasks` 209개 성공, failures 0, errors 0, skipped 0, `BUILD SUCCESSFUL`.
+- Frontend: `npm run build` 성공(Vite 7.3.6, 78 modules transformed).
 
-다운로드 요청은 서버 API를 통해 처리한다.
+### 수동 통합 검증
 
-다운로드 흐름은 다음과 같다.
-1. 최신 배포 버전 조회
-2. 버전 상태 검증
-3. 파일 메타데이터 조회
-4. 실제 파일 존재 여부 검증
-5. 다운로드 이력 저장
-6. 파일 스트리밍 응답
+- 비회원: 공개 화면, 최신 버전, ZIP 다운로드, News/Post/Comment 조회와 비인가 UI 차단 확인
+- USER: 가입·로그인·세션 유지·게시글/댓글 CUD·타 작성자 UI 차단·관리자 차단·로그아웃 확인
+- ADMIN: 회원 필터/정지/해제, 정지 로그인 차단, 자기 상태 변경 차단, 버전 생성/업로드/release, 기존 RELEASED 비활성화, News CRUD, 통계와 DB 집계 일치 확인
+- 다운로드 1요청마다 DownloadHistory 1행 증가 확인
 
-### 3.4 다운로드 통계
-관리자는 다음 통계를 조회할 수 있다.
+### 운영 검증
 
-- 전체 다운로드 수
-- 버전별 다운로드 수
-- 일별 다운로드 수
+- 로컬: 세 컨테이너 정상, MySQL healthcheck, `localhost:80`, `/api` proxy, SPA 직접 URL, 실제 ZIP, DB/storage 복원 확인
+- AWS(ap-northeast-2): Home·로그인/API·ZIP·관리자 기능 외부 접속 성공, Compose restart 후 DB와 storage 유지 확인
+- t3.micro의 약 1GB RAM에서 Docker·MySQL·Gradle build 메모리 부족을 줄이기 위해 2GB swap 구성
 
----
+## 6. 최종 운영 구조
 
-## 4. 기술 스택
+```text
+사용자
+  ↓
+Elastic IP
+  ↓
+Nginx :80
+  ├─ React static assets
+  └─ /api/** → Spring Boot :8080 → MySQL :3306
+```
 
-### Backend
-- Java 25
-- Spring Boot 4.1
-- Spring Web
-- Spring Data JPA
-- Spring Security
-- Bean Validation
-- Gradle
+- 외부 공개 포트: HTTP 80
+- SSH 22: 사용자 IP로 제한
+- backend 8080, MySQL 3306: host 외부 미공개
+- DB: Docker named volume `mysql-data` ↔ `/var/lib/mysql`
+- 게임 파일: EC2 host `./storage` ↔ backend `/app/storage`
 
-### Database
-- MySQL
+## 7. 운영 설정 정책
 
-### Frontend
-- React
-- JavaScript
-- HTML
-- CSS
+- `SPRING_PROFILES_ACTIVE=prod`; datasource는 환경변수로 주입
+- `.env.prod`는 Git 제외, `.env.prod.example`만 추적
+- `ddl-auto: validate`; 운영 schema는 dump/import로 초기화하며 Flyway/Liquibase는 미사용
+- backend는 non-root UID/GID 10001로 실행하므로 EC2 host storage 쓰기 권한이 필요
+- EC2 `jexon-server`: Ubuntu Server 26.04 LTS, t3.micro, 30 GiB gp3, Elastic IP
+- 현재 RDS/S3 없이 EC2 한 대의 Docker Compose로 운영
 
-### Infrastructure
-- Docker
-- Nginx
-- GitHub
+## 8. 미구현 및 향후 개선
 
-### Development Tool
-- IntelliJ IDEA
-- Codex
-- ChatGPT
+- HTTPS, SSL 인증서, 도메인, Route53
+- RDS, S3, CDN
+- CI/CD, GitHub Actions
+- Flyway/Liquibase
+- Range Request, 다운로드 완료 추적, release 시 checksum 재검증, 과거 버전 다운로드
+- 기간별 통계, 7일/30일 필터, 차트
+- 관리자 역할 변경, 회원 상세 관리·개인정보 수정, 검색 기능 확대
+- 파일 교체·삭제 및 orphan cleanup
 
----
-
-## 5. 문서 구성
-
-- `01_RoadMap.md`: 프로젝트 목표와 개발 순서
-- `02_ADR.md`: 주요 설계 결정과 선택 이유
-- `03_Requirements.md`: 기능별 요구사항과 정책
-- `04_ERD.md`: 엔티티, 컬럼, 관계, 제약조건
-- `05_API.md`: REST API 요청 및 응답 명세
-
----
-
-## 6. 개발 순서
-
-### 1단계. 프로젝트 기획
-- 프로젝트 범위 확정
-- 사용자 역할 정의
-- MVP 기능 확정
-- 핵심 기술 목표 정의
-
-### 2단계. 설계 문서 작성
-- RoadMap 작성
-- ADR 초안 작성
-- 기능 요구사항 작성
-- ERD 설계
-- API 명세 작성
-
-### 3단계. 프로젝트 기반 설정
-- MySQL 연결
-- 환경 설정 분리
-- 공통 예외 처리
-- JPA Auditing 설정
-- Spring Security 기본 설정
-- 패키지 구조 생성
-
-### 4단계. 회원 기능
-- 회원가입
-- 로그인
-- 로그아웃
-- 로그인 상태 조회
-- 회원 정보 조회 및 수정
-- 회원 권한 및 상태 검사
-
-### 5단계. 커뮤니티 기능
-- 게시글 목록
-- 게시글 상세
-- 게시글 작성
-- 게시글 수정
-- 게시글 삭제
-- 댓글 작성
-- 댓글 수정
-- 댓글 삭제
-
-### 6단계. 새소식 기능
-- 새소식 목록
-- 새소식 상세
-- 관리자 새소식 등록
-- 관리자 새소식 수정
-- 관리자 새소식 삭제
-
-### 7단계. 버전 및 파일 관리
-- 게임 버전 등록: 완료
-- 게임 버전 목록 및 상세 조회: 완료
-- 게임 버전 수정: 완료
-- 최신 버전 변경 및 이전 버전 비활성화: 완료
-- 게임 버전 낙관적 락 및 동시 release 제어: 완료
-- GameFile 메타데이터 Entity 및 Repository: 완료
-- FileStorage 추상화 및 LocalFileStorage: 완료
-- DRAFT 게임 버전 ZIP 업로드: 완료
-- 파일명 정제 및 ZIP signature 검증: 완료
-- streaming 저장, 실제 fileSize 및 SHA-256 계산: 완료
-- 짧은 DB 트랜잭션을 통한 메타데이터 저장: 완료
-- DB 저장 실패 시 실제 파일 보상 삭제: 완료
-- GameFile 필수 release 조건: 완료
-
-### 8단계. 다운로드 기능
-- 공개 최신 RELEASED 버전 및 GameFile 메타데이터 조회: 완료
-- 공개 최신 버전 실제 파일 다운로드: 완료
-- FileStorage 읽기 기능 및 LocalFileStorage 스트리밍: 완료
-- 원본 파일명 기반 Content-Disposition 응답: 완료
-- 다운로드 대상 및 실제 물리 파일 검증: 완료
-- DownloadHistory 요청별 적재: 완료
-- 별도 트랜잭션 기반 best-effort 이력 저장: 완료
-- 다운로드 예외 처리: 완료
-
-### 9단계. 관리자 기능
-- 회원 목록 및 검색
-- 회원 정지 및 해제
-- 게시글과 댓글 관리
-- 버전 및 파일 관리
-- 전체/버전별/일별 다운로드 통계 API: 완료
-- 관리자 다운로드 통계 화면: 미구현
-
-### 10단계. 프론트엔드
-- 공통 레이아웃
-- 메인 화면
-- 게임 소개
-- 새소식
-- 커뮤니티
-- 로그인 및 회원가입
-- 마이페이지
-- 관리자 페이지
-
-### 11단계. 테스트
-- 회원 기능 테스트
-- 게시글과 댓글 권한 테스트
-- 게임 버전 Entity, Service, Controller 테스트: 완료
-- MySQL 기반 버전 UNIQUE 및 낙관적 락 테스트: 완료
-- 동시 release, rollback 및 RELEASED 단일성 테스트: 완료
-- GameFile 저장소, 검증, 업로드, 보상 삭제 테스트: 완료
-- GameFile 필수 release 조건 테스트: 완료
-- Postman 업로드 수동 검증: 완료
-- Step 5 관련 Service, FileStorage, Controller 및 Security 테스트: 완료
-- Docker 실행 상태 전체 자동 테스트 196개, failures 0, errors 0, skipped 0, BUILD SUCCESSFUL
-- Postman에서 비로그인 최신 버전 조회 200, 공개 메타데이터 및 storageKey 비노출 확인: 완료
-- Postman에서 비로그인 실제 ZIP 스트리밍 다운로드 및 바이너리 저장 확인: 완료
-- 동일 다운로드 2회 요청 후 download_histories가 1행씩 총 2행으로 누적되고 GameVersion, GameFile, createdAt이 일치하는지 DB 확인: 완료
-- 관리자 다운로드 통계 Service 및 Controller 테스트: 완료
-- MySQL Testcontainers 기반 버전별/일별 GROUP BY 및 정렬 통합 테스트: 완료
-- Postman과 실제 MySQL DB에서 전체 2건, v1.5.0 2건, 2026-08-15 2건 집계 일치 확인: 완료
-
-### 12단계. 배포 및 문서화
-- Docker 설정
-- Nginx 설정
-- 서버 배포
-- README 작성
-- ERD 및 흐름도 정리
-- 트러블슈팅 정리
-
----
-
-## 7. Codex 활용 원칙
-
-### 직접 결정하고 구현할 영역
-- 프로젝트 범위
-- 기능 요구사항
-- ERD
-- API 설계
-- 회원가입과 로그인
-- 커뮤니티 핵심 기능
-- 권한 정책
-- 게임 버전 상태 정책
-- 파일 저장 정책
-- 다운로드 처리 정책
-- 테스트 기준
-
-
-### Codex를 적극 활용할 영역
-- 반복 CRUD 코드 초안
-- DTO와 Controller 초안
-- React 컴포넌트
-- CSS
-- 관리자 테이블 화면
-- 테스트 코드 초안
-- 코드 리뷰
-- 리팩터링
-- 오류 원인 탐색
-
-### 사용 원칙
-Codex가 생성한 코드는 반드시 직접 실행하고 검토한다.
-
-핵심 비즈니스 로직에 사용한다면 다음 내용을 직접 설명할 수 있어야 한다.
-
-- 해당 구조를 선택한 이유
-- 트랜잭션 범위
-- 예외 처리 방식
-- 데이터 정합성 유지 방법
-
----
-
-## 8. MVP 제외 범위
-초기 MVP에는 다음 기능을 포함하지 않는다.
-- 여러 게임 등록
-- 게임 구매 및 결제
-- 런처
-- 친구 및 채팅
-- 대댓글
-- 게시글 추천
-- 신고 누적 자동 제재
-- S3 파일 저장
-- CDN
-- 파일 이어받기
-- Range 다운로드
-- 이메일 인증
-- 비밀번호 찾기
-
-필요한 경우 MVP 완료 후 확장 기능으로 검토한다.
-
----
-
-## 9. 예상 개발 일정
-
-### Step 1
-- 설계 문서 작성
-- ERD 작성
-- API 명세 작성
-- 프로젝트 환경 설정
-
-### Step 2
-- 회원가입
-- 로그인
-- 로그아웃
-- 권한 설정
-
-### Step 3
-- 게시글
-- 댓글
-- 새소식
-
-### Step 4
-- GameVersion 등록, 조회, 수정 및 release: 완료
-- GameVersion release 동시성 제어: 완료
-- GameFile 메타데이터 및 Repository: 완료
-- FileStorage 및 LocalFileStorage: 완료
-- ZIP 업로드와 streaming 저장: 완료
-- 파일명 및 ZIP signature 검증: 완료
-- SHA-256 및 실제 fileSize 계산: 완료
-- DB 메타데이터 저장과 실패 시 파일 보상 삭제: 완료
-- GameFile 필수 release 조건: 완료
-- 관련 자동 테스트 및 Postman 수동 검증: 완료
-
-### Step 5
-- 공개 최신 RELEASED 버전 조회: 완료
-- 공개 GameFile 메타데이터 조회: 완료
-- Download API 및 실제 파일 streaming: 완료
-- FileStorage `open` 및 LocalFileStorage 읽기: 완료
-- DownloadHistory Entity, Repository 및 Service: 완료
-- 정상 다운로드 요청별 이력 적재: 완료
-- 이력 저장 실패 시 다운로드 계속 처리: 완료
-- 관련 자동 테스트 및 Postman/DB 수동 검증: 완료
-- 관리자 다운로드 통계 조회: Step 6 완료
-- 실제 물리 파일 release 재검증: 미구현
-
-### Step 4 이후 확장 예정
-- S3 및 CDN
-- 파일 교체 및 삭제
-- background orphan cleanup
-
-### Step 6
-- 관리자 전체 다운로드 통계 API: 완료
-- 관리자 버전별 다운로드 통계 API: 완료
-- 관리자 일별 다운로드 통계 API: 완료
-- DB COUNT/GROUP BY 및 Projection 기반 집계: 완료
-- ACTIVE ADMIN 권한 재검증: 완료
-- Docker 기반 자동 테스트 및 Postman/DB 수동 검증: 완료
-- 관리자 다운로드 통계 화면: 미구현
-- 프론트엔드 연동: 미구현
-
-### Step 7
-- 테스트
-- 오류 수정
-- README
-- 배포 점검
-
----
-
-## 10. 완료 기준
-
-다음 조건을 만족하면 MVP 구현 완료로 판단한다.
-
-- 비회원이 최신 게임 파일을 다운로드할 수 있다.
-- 사용자에게 실제 파일 저장 경로가 노출되지 않는다.
-- 관리자가 새로운 버전과 파일을 등록할 수 있다.
-- 관리자가 최신 배포 버전을 변경할 수 있다.
-- 최신 배포 버전은 하나만 유지된다.
-- 회원이 게시글과 댓글을 작성할 수 있다.
-- 작성자 또는 관리자만 게시글과 댓글을 수정하거나 삭제할 수 있다.
-- 관리자가 회원을 정지하거나 해제할 수 있다.
-- 전체, 버전별, 일별 다운로드 통계를 조회할 수 있다.
+현재 배포는 **HTTP + Elastic IP**이며 위 항목은 완료로 처리하지 않는다.

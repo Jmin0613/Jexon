@@ -1,760 +1,119 @@
 # Jexon 기능 요구사항
 
-## 1. 공통 정책
+## 1. 공통 인증·권한 정책
 
-### 1.1 사용자 유형
-- 비회원
-- 회원
-- 관리자
+- 인증은 Spring Security HTTP session을 사용한다.
+- 비회원은 공개 Home, 최신 버전/다운로드, News, Post, Comment 조회가 가능하다.
+- 로그인 사용자의 쓰기 요청은 Service에서 최신 Member가 `ACTIVE`인지 확인한다.
+- `/api/admin/**`는 Security의 ADMIN 검사와 Service의 최신 `ACTIVE + ADMIN` 검사를 모두 통과해야 한다.
+- 역할은 `USER`, `ADMIN`; 상태는 `ACTIVE`, `SUSPENDED`, `WITHDRAWN`이다.
+- SUSPENDED와 WITHDRAWN은 로그인할 수 없다. WITHDRAWN 전환·복구 API는 현재 제공하지 않는다.
 
-### 1.2 권한 정책
-| 기능 | 비회원 | 회원 | 관리자 |
-|---|---:|---:|---:|
-| 게임 소개 조회 | 가능 | 가능 | 가능 |
-| 새소식 조회 | 가능 | 가능 | 가능 |
-| 게시글 조회 | 가능 | 가능 | 가능 |
-| 댓글 조회 | 가능 | 가능 | 가능 |
-| 최신 버전 다운로드 | 가능 | 가능 | 가능 |
-| 게시글 작성 | 불가 | 가능 | 가능 |
-| 댓글 작성 | 불가 | 가능 | 가능 |
-| 본인 글 수정 및 삭제 | 불가 | 가능 | 가능 |
-| 다른 회원 글 삭제 | 불가 | 불가 | 가능 |
-| 회원 관리 | 불가 | 불가 | 가능 |
-| 버전 및 파일 관리 | 불가 | 불가 | 가능 |
-| 다운로드 통계 조회 | 불가 | 불가 | 가능 |
+## 2. 회원·인증
 
----
+### 회원가입
 
-## 2. 회원 기능
-
-### 2.1 회원가입
-
-#### 목적
-새로운 회원 계정을 생성한다.
-
-#### 입력 정보
-- 로그인 아이디
-- 비밀번호
-- 비밀번호 확인
-- 닉네임
-- 이메일
-- 이름
-- 전화번호
-
-#### 검증
-- 로그인 아이디는 필수다.
-- 로그인 아이디는 중복될 수 없다.
-- 로그인 아이디는 4자 이상 20자 이하다.
-- 로그인 아이디는 영문, 숫자만 허용한다.
-- 비밀번호는 12자 이상 30자 이하다.
-- 비밀번호와 비밀번호 확인 값이 일치해야 한다.
-- 닉네임은 2자 이상 20자 이하다.
-- 닉네임은 중복될 수 없다.
-- 이메일은 올바른 이메일 형식이어야 한다.
-- 이메일은 중복될 수 없다.
-- 전화번호는 필수다.
-- 전화번호는 중복될 수 없다.
-- 전화번호는 010으로 시작하는 11자리 숫자여야 한다.
-
-#### 처리
-- 비밀번호를 암호화한다.
-- 기본 권한은 USER로 설정한다.
-- 기본 상태는 ACTIVE로 설정한다.
-- 회원 데이터를 저장한다.
-
-#### 결과
-회원가입 성공 후 생성된 회원 ID를 반환한다.
-
----
-
-### 2.2 로그인
-
-#### 입력 정보
-- 로그인 아이디
-- 비밀번호
-
-#### 검증
-- 존재하는 회원이어야 한다.
-- 비밀번호가 일치해야 한다.
-- 회원 상태가 ACTIVE여야 한다.
-
-#### 처리
-인증 성공 시 HTTP 세션을 생성한다.
-
-세션에는 최소한 다음 정보를 저장한다.
-
-- 회원 ID
-- 회원 권한
-
-#### 실패 조건
-- 존재하지 않는 로그인 아이디
-- 비밀번호 불일치
-- 정지 회원
-- 탈퇴 회원
-
----
-
-### 2.3 로그아웃
-
-#### 권한
-로그인 회원
-
-#### 처리
-현재 HTTP 세션을 무효화한다.
-
----
-
-### 2.4 로그인 상태 조회
-
-#### 목적
-프론트엔드에서 현재 로그인 사용자의 정보를 확인한다.
-
-#### 반환 정보
-- 회원 ID
-- 로그인 아이디
-- 닉네임
-- 권한
-- 상태
-
-비로그인 상태에서는 인증되지 않았음을 반환한다.
-
----
-
-### 2.5 마이페이지 조회
-
-#### 권한
-로그인 회원
-
-#### 반환 정보
-- 로그인 아이디
-- 이메일
-- 닉네임
-- 가입일
-- 작성 게시글 수
-- 작성 댓글 수
-
----
-
-### 2.6 회원 정보 수정
-
-#### 권한
-로그인 회원 본인
-
-#### 수정 가능 정보
-- 닉네임
-- 이메일
-
-#### 검증
-- 닉네임 중복 불가
-- 이메일 중복 불가
-- 현재 회원이 사용 중인 값은 중복으로 판단하지 않는다.
-
----
-
-## 3. 커뮤니티 게시글
-
-### 3.1 게시글 목록 조회
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 기능
-- 페이지 단위 조회
-- 최신 작성순 정렬
-- 제목 검색
-- 작성자 닉네임 검색
-
-#### 기본 페이지 조건
-- page: 0
-- size: 20
-- sort: createdAt,desc
-
-#### 반환 정보
-- 게시글 ID
-- 제목
-- 작성자 닉네임
-- 조회 수
-- 댓글 수
-- 작성일
-
----
-
-### 3.2 게시글 상세 조회
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 처리
-- 게시글 정보를 조회한다.
-- 게시글 조회 수를 증가시킨다.
-- 댓글 목록을 함께 조회한다.
-
-#### 반환 정보
-- 게시글 ID
-- 제목
-- 내용
-- 작성자 ID
-- 작성자 닉네임
-- 조회 수
-- 작성일
-- 수정일
-- 댓글 목록
-- 현재 사용자의 수정 및 삭제 가능 여부
-
----
-
-### 3.3 게시글 작성
-
-#### 권한
-ACTIVE 상태의 로그인 회원
-
-#### 입력 정보
-- 제목
-- 내용
-
-#### 검증
-- 제목은 필수다.
-- 제목은 1자 이상 100자 이하다.
-- 내용은 필수다.
-- 내용은 1자 이상 10,000자 이하다.
-
-#### 처리
-현재 로그인한 회원을 작성자로 설정한다.
-
----
-
-### 3.4 게시글 수정
-
-#### 권한
-- 게시글 작성자
-- 관리자
-
-#### 입력 정보
-- 제목
-- 내용
-
-#### 검증
-게시글 작성과 동일한 검증을 적용한다.
-
----
-
-### 3.5 게시글 삭제
-
-#### 권한
-- 게시글 작성자
-- 관리자
-
-#### 초기 정책
-MVP에서는 게시글을 실제 삭제한다.
-
-게시글 삭제 시 연결된 댓글도 함께 삭제한다.
-
-추후 운영 이력 보존이 필요하면 논리 삭제로 변경한다.
-
----
-
-## 4. 댓글
-
-### 4.1 댓글 작성
-
-#### 권한
-ACTIVE 상태의 로그인 회원
-
-#### 입력 정보
-- 내용
-
-#### 검증
-- 대상 게시글이 존재해야 한다.
-- 댓글 내용은 필수다.
-- 댓글 내용은 1자 이상 1,000자 이하다.
-
----
-
-### 4.2 댓글 수정
-
-#### 권한
-- 댓글 작성자
-- 관리자
-
-#### 입력 정보
-- 내용
-
----
-
-### 4.3 댓글 삭제
-
-#### 권한
-- 댓글 작성자
-- 관리자
-
-#### 초기 정책
-MVP에서는 실제 삭제한다.
-
-대댓글은 구현하지 않는다.
-
----
-
-## 5. 새소식
-
-### 5.1 새소식 유형
-- NOTICE: 일반 공지
-- PATCH_NOTE: 패치노트
-- EVENT: 이벤트
-
-새소식 유형은 필수이며, 생성과 수정 시 입력받는다.
-
----
-
-### 5.2 새소식 목록 조회
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 기능
-- 페이지 조회
-- `type` 유형 필터
-- `keyword` 제목 검색
-- 유형 필터와 제목 검색 동시 적용
-- `createdAt DESC`, `id DESC` 최신순 정렬
-
-#### 페이지 정책
-- page 기본값: 0
-- size 기본값: 20
-- 최대 size: 100
-- 클라이언트가 전달한 정렬 조건은 사용하지 않는다.
-- keyword가 NULL 또는 공백이면 제목 검색 조건을 적용하지 않는다.
-
-#### 반환 정보
-- 새소식 ID
-- 유형
-- 제목
-- 작성일
-
-목록 응답에는 본문과 작성자 정보를 포함하지 않는다.
-
----
-
-### 5.3 새소식 상세 조회
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 반환 정보
-- 새소식 ID
-- 유형
-- 제목
-- 내용
-- 작성일
-- 수정일
-
-공개 응답에는 작성자 정보를 포함하지 않는다.
-
----
-
-### 5.4 새소식 등록
-
-#### 권한
-ACTIVE 상태의 ADMIN
-
-#### 입력 정보
-- 유형
-- 제목
-- 내용
-
-#### 검증
-- 유형은 필수다.
-- 제목은 필수다.
-- 제목은 150자를 초과할 수 없다.
-- 내용은 필수다.
-- 내용은 10,000자를 초과할 수 없다.
-
-#### 처리
-- 최신 Member 정보를 DB에서 다시 조회한다.
-- 최신 상태가 ACTIVE이고 최신 역할이 ADMIN인지 확인한다.
-- 작성 관리자를 writer로 저장한다.
-
----
-
-### 5.5 새소식 수정 및 삭제
-
-#### 권한
-- ACTIVE 상태의 ADMIN
-- 작성자 일치 여부는 검사하지 않는다.
-
-#### 처리
-- ACTIVE ADMIN은 다른 관리자가 작성한 새소식도 수정하거나 삭제할 수 있다.
-- 다른 관리자가 수정해도 writer는 최초 작성 관리자로 유지한다.
-- 수정과 삭제 시 최신 Member 상태와 역할을 DB에서 다시 확인한다.
-- 삭제는 실제 삭제한다.
-
----
-
-## 6. 게임 버전
-
-### 6.1 버전 상태
-- DRAFT
-- RELEASED
-- INACTIVE
-
----
-
-### 6.2 게임 버전 등록
-
-#### 권한
-관리자
-
-#### 입력 정보
-- 버전 번호
-- 버전 제목
-- 버전 설명
-
-#### 검증
-- 버전 번호는 필수다.
-- 버전 번호는 중복될 수 없다.
-- 버전 번호는 30자를 초과할 수 없다.
-- 버전 번호는 소문자 `v`로 시작하는 `vMAJOR.MINOR.PATCH` 형식이어야 한다.
-- 버전 제목은 10자 이상 100자 이하여야 한다.
-- 버전 설명은 10자 이상 500자 이하여야 한다.
-- 최초 등록 상태는 DRAFT다.
-
-#### 버전 번호 예시
-- v1.0.0
-- v1.1.0
-- v2.0.0
-
-버전 번호는 생성 후 변경하지 않으며 별도의 버전 비교 로직은 구현하지 않는다.
-
----
-
-### 6.3 버전 목록 조회
-
-#### 사용자
-비회원, USER, ADMIN은 현재 RELEASED 상태인 공식 최신 버전과 연결된 공개 GameFile 메타데이터를 조회할 수 있다.
-최신 버전은 version 문자열이나 createdAt이 아니라 RELEASED 상태 하나로 결정한다. DRAFT와 INACTIVE는 공개하지 않는다.
-
-#### 관리자
-DRAFT, RELEASED, INACTIVE 상태의 모든 버전을 조회할 수 있다.
-
-- 페이지 크기는 최대 100이다.
-- 정렬은 `createdAt DESC`, `id DESC`로 고정한다.
-- status 조건 조회를 제공한다.
-
----
-
-### 6.4 최신 버전 배포
-
-#### 권한
-관리자
-
-#### 사전 조건
-- 대상 버전이 존재해야 한다.
-- 대상 버전은 DRAFT 또는 INACTIVE 상태여야 한다.
-- 대상 버전에 GameFile이 등록되어 있어야 한다.
-
-GameFile이 없으면 409 Conflict로 release를 거부한다. 현재 release 단계에서는 실제 물리 파일의 존재 여부, 읽기 가능 여부, fileSize 일치 또는 checksum을 재검증하지 않는다.
-
-#### 처리
-1. 공통 GameVersionReleaseControl의 releaseSequence를 증가시킨다.
-2. 기존 RELEASED 버전을 조회한다.
-3. 기존 RELEASED 버전이 있으면 INACTIVE로 변경한다.
-4. 대상 버전을 RELEASED로 변경한다.
-5. releasedAt을 현재 시각으로 갱신한다.
-6. 하나의 트랜잭션에서 처리한다.
-
-#### 결과
-RELEASED 상태는 최대 하나만 존재한다.
-
-GameVersion과 GameVersionReleaseControl의 `@Version`으로 동시 변경을 감지한다.
-낙관적 락 충돌 시 자동 재시도하지 않고 409 Conflict를 반환한다.
-
----
-
-### 6.5 버전 비활성화
-
-#### 권한
-관리자
-
-#### 정책
-현재 RELEASED 버전을 단독으로 INACTIVE 처리하는 기능은 초기 MVP에서 제공하지 않는다.
-
-새 버전을 RELEASED로 변경할 때 기존 버전이 자동으로 INACTIVE 상태가 된다.
-
-### 6.6 게임 버전 수정 및 삭제
-
-- version은 수정할 수 없다.
-- title과 description은 부분 수정할 수 있다.
-- DRAFT, RELEASED, INACTIVE 모든 상태에서 수정할 수 있다.
-- GameVersion 삭제 API와 자동 삭제 정책은 제공하지 않는다.
-
----
-
-## 7. 게임 파일
-
-GameFile은 실제 파일과 분리된 DB 메타데이터다. GameVersion과 GameFile은 1:1이며 관계의 주인은 GameFile이다. GameFile에서 GameVersion으로 향하는 LAZY 단방향 OneToOne 관계를 사용한다.
-
-### 7.1 파일 업로드
-
-#### 권한
-관리자
-
-#### 사전 조건
-- 대상 게임 버전이 존재해야 한다.
-- 대상 버전 상태가 DRAFT여야 한다.
-- 대상 버전에 기존 파일이 없어야 한다.
-
-#### 허용 파일
-
-초기 MVP에서는 다음 확장자를 허용한다.
-- `.zip`
-
-확장자만 신뢰하지 않고 일반 ZIP `50 4B 03 04` 또는 빈 ZIP `50 4B 05 06` signature를 확인한다. MIME contentType은 선택적 보조 메타데이터이며 유효성 판단 기준으로 사용하지 않는다.
-
-#### 파일 크기
-최대 파일 크기는 512 MiB(`536870912` bytes)다. Spring Multipart와 FileStorage의 실제 streaming byte 수 검증을 함께 적용한다.
-
-#### 처리
-1. 최신 Member를 조회하여 ACTIVE ADMIN 권한을 검사한다.
-2. GameVersion 존재, DRAFT 상태, 기존 GameFile 여부를 선검사한다.
-3. 경로를 제거한 basename에 Unicode NFC 정규화를 적용하고 확장자를 추출한다.
-4. ZIP 확장자와 실제 signature를 검사한다.
-5. `game-files/{gameVersionId}/{UUID}.zip` 형식의 storageKey를 생성한다.
-6. LocalFileStorage의 temp 파일에 한 번의 streaming으로 저장하면서 실제 fileSize, SHA-256 및 최대 크기를 검사한다.
-7. 성공하면 temp 파일을 최종 위치로 이동하고 StorageResult를 반환한다.
-8. GameFilePersistenceService의 짧은 DB 트랜잭션에서 GameVersion 상태와 중복을 재검사한다.
-9. GameFile 메타데이터를 생성하고 `saveAndFlush()`한다.
-10. 실제 파일 저장 후 DB 저장 또는 commit이 실패하면 `FileStorage.delete(storageKey)`로 보상 삭제한다.
-
-#### 저장 정보
-- 원본 파일명
-- 내부 storageKey
-- 확장자
-- 선택적 contentType
-- 파일 크기
-- SHA-256 체크섬
-
-storageKey와 실제 저장 경로는 API 응답에 노출하지 않는다.
-
-### 7.2 FileStorage 및 정합성
-
-`FileStorage`는 `store`, `exists`, `open`, `delete`를 제공하며 MultipartFile이나 도메인 Entity에 의존하지 않는다. 현재 구현체인 LocalFileStorage는 안전한 경로 resolve, root 탈출 방지, 기존 파일 덮어쓰기 방지, temp 파일, streaming, atomic move 우선 및 일반 move fallback, 실패 시 temp 정리, idempotent delete를 담당한다. `open`도 기존 안전 경로 변환을 재사용하고 READ 전용 InputStream을 반환한다.
-
-GameFileUploadService에는 트랜잭션을 적용하지 않아 파일 streaming 동안 DB 트랜잭션을 유지하지 않는다. GameFilePersistenceService에만 짧은 `@Transactional`을 적용한다. 파일 시스템은 DB rollback 대상이 아니므로 DB 실패 시 직접 보상 삭제한다. 보상 삭제 실패는 원래 DB 예외를 유지하고 suppressed exception과 ERROR 로그로 기록한다.
-
-GameFile 중복은 UploadService 선검사, PersistenceService 재검사, DB `uk_game_file_game_version_id` UNIQUE 제약의 세 단계로 방어한다. 동시 INSERT 충돌은 DuplicateGameFileException으로 변환하여 409 Conflict를 반환한다.
-
-Upload Persistence의 DRAFT 재검사와 release 상태 변경 사이에는 동일 GameVersion에 대한 공통 행 잠금이 없다. 두 작업이 정확히 동시에 실행되는 극단적인 경우 경쟁 가능성이 남아 있으며 현재 MVP에서는 추가 lock을 도입하지 않는다.
-
----
-
-### 7.3 파일 교체
-초기 MVP에서는 파일 교체 기능을 제공하지 않는다. 동일 GameVersion에 GameFile이 이미 존재하면 409 Conflict를 반환한다.
-
----
-
-### 7.4 파일 삭제
-
-초기 MVP에서는 GameFile 삭제 API를 제공하지 않는다.
-
----
-
-## 8. 게임 다운로드
-
-공개 최신 버전 조회, 실제 파일 스트리밍 다운로드, DownloadHistory 적재 및 관리자 통계 조회가 구현되어 있다.
-
-### 8.1 최신 버전 조회
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 반환 정보
-- gameVersionId
-- version
-- title
-- description
-- releasedAt
-- gameFileId
-- originalFileName
-- fileSize
-- checksum
-
-storageKey, 실제 물리 경로, contentType, lockVersion, createdAt, updatedAt 및 ReleaseControl 정보는 반환하지 않는다.
-
----
-
-### 8.2 최신 게임 다운로드
-
-#### 권한
-비회원 포함 전체 사용자
-
-#### 처리 흐름
-1. RELEASED 상태의 버전을 조회한다.
-2. 버전에 연결된 GameFile을 조회한다.
-3. 실제 파일 존재 여부를 확인한다.
-4. `FileStorage.open()`으로 InputStream을 연다.
-5. DownloadHistory 저장을 한 번 시도한다.
-6. `InputStreamResource`로 파일을 스트리밍 응답한다.
-
-#### 응답
-- Content-Type: application/octet-stream
-- Content-Disposition: attachment
-- Content-Length: 파일 크기
-
-사용자에게 실제 서버 저장 경로와 UUID 저장 파일명을 노출하지 않는다.
-
-다운로드 응답 파일명은 원본 파일명을 사용한다.
-
----
-
-### 8.3 다운로드 이력
-
-#### 저장 시점
-모든 파일 검증을 통과한 후 파일 응답을 시작하기 직전에 저장한다.
-
-#### 저장 정보
-- GameVersion 필수 관계
-- GameFile 필수 관계
-- BaseTimeEntity의 createdAt
-
-Member, IP 및 User-Agent는 저장하지 않는다. cascade와 orphanRemoval도 추가하지 않는다.
-
-#### 통계 기준
-다운로드 수는 파일 전송 완료 횟수가 아니라 유효한 다운로드 시작 횟수를 의미한다.
-
-RELEASED, GameFile, 실제 물리 파일 확인과 `FileStorage.open()`까지 성공한 경우에만 요청당 정확히 한 번 저장을 시도한다. 이력 저장은 `REQUIRES_NEW` 트랜잭션과 `saveAndFlush()`를 사용한다. 저장 실패는 WARN 로그로 남기고 실제 다운로드는 계속한다.
-
----
-
-## 9. 관리자 회원 관리
-
-### 9.1 회원 목록 조회
-
-#### 권한
-관리자
-
-#### 기능
-- 페이지 조회
-- 로그인 아이디 검색
-- 닉네임 검색
-- 이메일 검색
-- 회원 상태 필터
-- 회원 권한 필터
-
----
-
-### 9.2 회원 정지
-
-#### 권한
-관리자
-
-#### 처리
-회원 상태를 SUSPENDED로 변경한다.
-
-#### 정책
-- ADMIN 계정은 정지할 수 없다.
-- 자기 자신을 정지할 수 없다.
-- 정지 회원은 로그인할 수 없다.
-- 이미 로그인 중인 세션의 즉시 만료 처리는 MVP 이후 검토한다.
-
----
-
-### 9.3 회원 정지 해제
-
-#### 권한
-관리자
-
-#### 처리
-SUSPENDED 상태를 ACTIVE 상태로 변경한다.
-
----
-
-## 10. 관리자 커뮤니티 관리
-
-관리자는 모든 게시글과 댓글을 삭제할 수 있다.
-
-초기 MVP에서는 관리자 삭제 사유와 신고 기능을 구현하지 않는다.
-
----
-
-## 11. 다운로드 통계
-
-Step 6에서 관리자용 전체/버전별/일별 다운로드 통계 API를 구현했다. 통계는 실제 DB에 저장된 DownloadHistory만 대상으로 하며, best-effort 이력 저장 실패가 발생하면 실제 다운로드 요청 수보다 작을 수 있다.
-
-### 11.1 전체 다운로드 수
-`DownloadHistoryRepository.count()`로 DownloadHistory 전체 행 개수를 집계한다.
-
-이력이 없으면 `totalDownloads`는 0이다.
-
-### 11.2 버전별 다운로드 수
-JPQL `COUNT`와 `GROUP BY`로 게임 버전별 DownloadHistory 행 개수를 DB에서 집계한다.
-
-반환 정보:
-- gameVersionId
-- version
-- status
-- downloadCount
-
-현재 RELEASED 버전만 제한하지 않으며, 다운로드 이력이 존재하는 과거 INACTIVE 버전도 포함한다. 이력이 있는 버전이 없으면 빈 목록을 반환한다.
-
-### 11.3 일별 다운로드 수
-MySQL `DATE(created_at)` 기준 Native Query의 `COUNT`와 `GROUP BY`로 일별 DownloadHistory 행 개수를 DB에서 집계한다.
-
-반환 정보:
-- date
-- downloadCount
-
-기간 파라미터나 최근 일수 제한 없이 전체 기간을 조회한다. 이력이 없으면 빈 목록을 반환한다.
-
-### 11.4 조회 권한
-세 API 모두 관리자 전용이다.
-
-- Spring Security의 `/api/admin/** -> hasRole("ADMIN")` 정책을 적용한다.
-- Controller는 `@AuthenticationPrincipal`에서 memberId를 얻어 Service에 전달한다.
-- Service는 DB의 최신 Member 상태가 ACTIVE이고 역할이 ADMIN인지 다시 검증한다.
-- 검증에 실패하면 기존 `GameVersionPermissionDeniedException` 정책으로 403을 반환한다.
-
-### 11.5 정렬
-- 버전별 통계: `releasedAt DESC`
-- 일별 통계: `date ASC`
-
-### 11.6 집계 구현 정책
-- 전체 DownloadHistory Entity를 조회하여 Java에서 집계하지 않는다.
-- 버전별 통계는 `VersionDownloadStatisticsProjection`, 일별 통계는 `DailyDownloadStatisticsProjection`으로 필요한 값만 조회한다.
-- Projection 결과는 Service에서 Response DTO로 변환한다.
-
----
-
-## 12. 공통 예외 정책
-| 상황 | HTTP 상태 |
-|---|---:|
-| 입력값 검증 실패 | 400 Bad Request |
-| 로그인 필요 | 401 Unauthorized |
-| 권한 없음 | 403 Forbidden |
-| 리소스 없음 | 404 Not Found |
-| 중복 아이디, 이메일, 닉네임, 버전 | 409 Conflict |
-| 현재 상태에서 수행할 수 없는 요청 | 409 Conflict |
-| 게임 버전 낙관적 락 충돌 | 409 Conflict |
-| 파일 저장 및 서버 내부 오류 | 500 Internal Server Error |
-
----
-
-## 13. 비기능 요구사항
-
-### 보안
-- 비밀번호는 단방향 암호화한다.
-- 실제 파일 저장 경로를 API 응답에 포함하지 않는다.
-- 관리자 API는 ADMIN 권한만 접근할 수 있다.
-- GameVersion 관리자 기능은 Service에서 최신 ACTIVE ADMIN 상태를 다시 검증한다.
-- 게시글과 댓글 수정 및 삭제 시 작성자 권한을 검증한다.
-
-### 데이터 정합성
-- 회원 아이디, 이메일, 닉네임은 UNIQUE 제약조건을 적용한다.
-- 게임 버전 번호는 UNIQUE 제약조건을 적용한다.
-- 최신 버전 변경은 하나의 트랜잭션에서 처리한다.
-- GameVersion과 GameVersionReleaseControl에 낙관적 락을 적용한다.
-- 모든 release 요청은 singleton ReleaseControl 행을 변경하여 공통 충돌 지점을 사용한다.
-- 파일 저장 성공 후 DB 저장 실패 시 FileStorage.delete로 보상 삭제한다.
-
-### 성능
-- 게시글, 회원, 새소식, 관리자 게임 버전 목록은 페이징 처리한다.
-- DownloadHistory 통계는 DB의 COUNT/GROUP BY로 수행한다.
-- Step 6에서는 별도 인덱스를 추가하지 않았다. `game_version_id`는 MySQL FK 인덱스를 활용할 수 있으며, `created_at` 인덱스는 데이터 증가와 실행계획을 확인한 뒤 검토한다.
+- loginId, password, nickname, email, name, phoneNumber를 입력한다.
+- 중복·형식 검증 후 BCrypt 비밀번호, 기본 `USER`, `ACTIVE`로 저장한다.
+- 성공 시 생성된 memberId를 반환한다.
+
+### 로그인·세션
+
+- loginId/password가 일치하고 상태가 ACTIVE인 경우 SecurityContext를 session에 저장한다.
+- `/api/auth/me`는 현재 session의 `memberId`, `loginId`, `nickname`, `role`만 반환한다.
+- 로그아웃은 session과 인증을 제거하고 `JSESSIONID` cookie를 삭제한다.
+
+### 관리자 회원 관리
+
+- 회원 목록은 선택적 status 필터, 기본 20/최대 100개, `createdAt DESC, id DESC` 고정 정렬을 사용한다.
+- 목록 응답은 memberId, loginId, nickname, email, role, status, createdAt이다.
+- 상태 변경은 ACTIVE↔SUSPENDED만 허용한다.
+- 같은 상태 요청과 WITHDRAWN 관련 변경은 409, 자기 자신 변경은 403이다.
+- 역할 변경, 회원 상세 관리와 개인정보 수정은 현재 지원하지 않는다.
+
+## 3. Community
+
+### 게시글
+
+- 목록·상세는 공개, 작성은 ACTIVE 로그인 사용자만 가능하다.
+- 목록은 기본 20/최대 100개, `createdAt DESC, id DESC`다.
+- title은 필수 최대 100자, content는 필수 최대 5,000자다.
+- 수정은 작성자만 가능하고 삭제는 작성자 또는 ACTIVE ADMIN이 가능하다.
+
+### 댓글
+
+- 게시글별 목록은 공개, 작성은 ACTIVE 로그인 사용자만 가능하다.
+- 목록은 기본 20/최대 100개, `createdAt DESC, id DESC`다.
+- content는 필수 최대 1,000자다.
+- 수정은 작성자만 가능하고 삭제는 작성자 또는 ACTIVE ADMIN이 가능하다.
+
+## 4. News
+
+- 유형은 `NOTICE`, `PATCH_NOTE`, `EVENT`다.
+- 공개 목록·상세를 제공한다. 목록은 선택적 type/keyword, 기본 20/최대 100개, `createdAt DESC, id DESC`다.
+- ACTIVE ADMIN만 작성·수정·삭제할 수 있다.
+- 운영 공동 콘텐츠이므로 다른 ADMIN이 작성한 글도 수정·삭제할 수 있고 최초 writer는 유지한다.
+- title은 필수 최대 150자, content는 필수 최대 10,000자다.
+
+## 5. GameVersion
+
+- 상태는 `DRAFT`, `RELEASED`, `INACTIVE`다.
+- version은 `vMAJOR.MINOR.PATCH`, 최대 30자, unique이며 생성 후 변경하지 않는다.
+- title 10~100자, description 10~500자다.
+- ACTIVE ADMIN은 생성, status 필터 목록, 상세, title/description 수정, release를 수행할 수 있다.
+- 새 버전은 DRAFT다. DRAFT 또는 INACTIVE만 release할 수 있고 GameFile이 필수다.
+- release 시 기존 RELEASED를 INACTIVE로 바꾸고 대상을 RELEASED로 전환하며 releasedAt을 현재 시각으로 갱신한다.
+- 공개 API는 현재 RELEASED 하나만 최신 버전으로 조회한다.
+- GameVersion과 singleton GameVersionReleaseControl의 낙관적 락으로 동시 release를 제어하며 충돌은 409다.
+
+## 6. GameFile
+
+- ACTIVE ADMIN은 DRAFT GameVersion에 ZIP 파일 하나만 업로드할 수 있다.
+- 원본 파일명 경로 제거·Unicode NFC 정규화, `.zip` 확장자와 ZIP signature를 검사한다.
+- 최대 크기는 512 MiB이며 streaming 저장 중 실제 fileSize와 SHA-256 checksum을 계산한다.
+- DB에는 GameVersion, originalFileName, storageKey, extension, contentType, fileSize, checksum과 공통 시각을 저장한다.
+- 실제 파일은 `FileStorage` 추상화를 거쳐 `LocalFileStorage`에 저장한다.
+- DB 메타데이터 저장 실패 시 저장된 물리 파일을 보상 삭제한다.
+- storageKey와 실제 경로는 외부 응답에 노출하지 않는다.
+- 파일 교체·삭제와 release 시 checksum/물리 파일 재검증은 현재 지원하지 않는다.
+
+Jexon Dino 소스는 별도 저장소에 있다. Jexon에서는 Windows executable을 포함한 약 47MB ZIP을 실제 업로드·다운로드 대상으로 사용하고 Home 소개 이미지에 활용한다.
+
+## 7. Download와 DownloadHistory
+
+- 비회원 포함 누구나 최신 RELEASED 파일을 다운로드할 수 있다.
+- 서버는 대상과 물리 파일을 검증하고 FileStorage InputStream을 `application/octet-stream`으로 streaming한다.
+- Content-Disposition은 originalFileName, Content-Length는 fileSize를 사용한다.
+- 파일 open 성공 후 요청 1건당 DownloadHistory 저장을 정확히 한 번 시도한다.
+- DownloadHistory는 GameVersion과 GameFile 필수 관계, createdAt/updatedAt만 가진다. Member, IP, User-Agent는 저장하지 않는다.
+- 기록은 `REQUIRES_NEW`와 `saveAndFlush()`를 사용한다. 실패는 WARN으로 남기고 다운로드는 계속하는 best-effort 정책이다.
+- 집계 기준은 전송 완료가 아니라 유효한 다운로드 시작 요청이다.
+
+## 8. 다운로드 통계
+
+- ACTIVE ADMIN만 전체 수, 버전별 수, 일별 수를 조회한다.
+- 전체는 repository `count()`, 버전별은 JPQL COUNT/GROUP BY + Projection, 일별은 MySQL `DATE(created_at)` native query + Projection으로 DB에서 직접 집계한다.
+- 버전별은 이력이 있는 과거 INACTIVE 버전도 포함하고 `releasedAt DESC`; 일별은 전체 기간을 `date ASC`로 반환한다.
+- 기간 query parameter, 7/30일 filter, chart는 현재 제공하지 않는다.
+- 데이터 규모와 현재 query를 고려해 별도 통계 index는 추가하지 않았다.
+
+## 9. Frontend
+
+- React, Vite, React Router를 사용한다.
+- 공개 Home/Download/News/Community/Login/Signup과 게시글·댓글 CUD UI를 제공한다.
+- Context가 `/api/auth/me`로 인증 상태를 복원하고 공통 fetch client가 `credentials: include`를 사용한다.
+- AdminRoute는 ADMIN UI 진입을 guard하며 Members, Game Versions, News, Download Statistics 화면을 제공한다.
+- Nginx가 production static assets를 제공하고 SPA fallback을 처리한다.
+- UI guard는 편의 기능이며 권한의 최종 기준은 backend다.
+
+## 10. 배포·운영
+
+- AWS ap-northeast-2의 EC2 `jexon-server` 한 대에서 Docker Compose 세 컨테이너(MySQL, Spring Boot, Nginx/React)를 운영한다.
+- Elastic IP의 HTTP 80만 공개하고 SSH 22는 사용자 IP로 제한한다. 8080/3306은 외부에 publish하지 않는다.
+- Nginx는 React static assets와 `/api/**` reverse proxy, SPA fallback을 담당한다.
+- `SPRING_PROFILES_ACTIVE=prod`, 환경변수 datasource, `ddl-auto: validate`를 사용한다.
+- `.env.prod`는 Git에서 제외하고 `.env.prod.example`만 추적한다.
+- schema는 dump/import 방식으로 초기화하며 Flyway/Liquibase는 현재 사용하지 않는다.
+- DB는 named volume, 게임 파일은 EC2 host `storage` bind mount로 영속화한다.
+- backend는 non-root UID/GID 10001이므로 host storage 권한을 준비해야 한다.
+- 현재는 HTTP + Elastic IP이며 HTTPS, SSL, domain, Route53은 미구현이다.

@@ -40,3 +40,6 @@ out/
 ### Local configuration ###
 src/main/resources/application-local.yml
 .env.prod
+
+### dump sql ###
+jexon_dump.sql

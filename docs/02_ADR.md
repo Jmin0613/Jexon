@@ -72,13 +72,9 @@ DownloadHistory에는 Member를 연결하지 않으며 모든 정상 다운로�
 실제 파일은 파일 저장소에 저장하고, DB에는 파일 메타데이터만 저장한다.
 
 ## DB 저장 정보
-- 원본 파일명
-- 서버 저장 파일명
-- 저장 경로
-- 파일 크기
-- 파일 확장자
-- 체크섬
-- 업로드 일시
+- `originalFileName`, 내부 `storageKey`
+- `extension`, `contentType`, `fileSize`, SHA-256 `checksum`
+- 공통 `createdAt`, `updatedAt`
 
 ## 결정 이유
 - 대용량 파일과 일반 데이터를 분리할 수 있다.
@@ -90,7 +86,7 @@ DownloadHistory에는 Member를 연결하지 않으며 모든 정상 다운로�
 파일을 DB의 BLOB 컬럼에 저장하는 방식
 
 ## 구현 후 보완
-파일 저장과 DB 저장의 실패 처리 방식을 작성한다.
+`FileStorage` 추상화와 `LocalFileStorage` 구현을 사용한다. `storageKey`와 실제 경로는 API에 노출하지 않는다. 파일 저장 후 DB 저장이 실패하면 물리 파일을 보상 삭제한다.
 
 ---
 
@@ -328,7 +324,7 @@ DownloadHistoryService.record는 `REQUIRES_NEW` 트랜잭션에서 `saveAndFlush
 
 ---
 
-# ADR-011. 새소식과 게임 버전은 선택적으로 연결
+# ADR-011. 새소식은 독립 운영 콘텐츠로 관리
 
 ## 상태
 결정 완료
@@ -337,20 +333,14 @@ DownloadHistoryService.record는 `REQUIRES_NEW` 트랜잭션에서 `saveAndFlush
 패치노트는 특정 버전과 관련되지만, 이벤트와 점검 공지는 특정 버전과 관계없을 수 있다.
 
 ## 결정
-News는 GameVersion을 선택적으로 참조할 수 있도록 한다.
-
-## 예시
-- 일반 공지: GameVersion 연결 없음
-- 이벤트 공지: GameVersion 연결 없음
-- 업데이트 안내: 특정 GameVersion 연결
+현재 News 엔티티는 GameVersion을 참조하지 않는다. `NOTICE`, `PATCH_NOTE`, `EVENT` 유형을 갖는 독립 운영 콘텐츠로 관리하며 ACTIVE ADMIN 누구나 다른 관리자가 작성한 글까지 수정·삭제할 수 있다. 최초 writer는 유지한다.
 
 ## 결정 이유
 - 일반 공지와 패치노트를 하나의 도메인으로 관리할 수 있다.
-- 버전과 관련된 패치노트만 선택적으로 연결할 수 있다.
 - 관리자 CRUD 중복을 줄일 수 있다.
 
 ## 구현 후 보완
-실제 NewsType과 화면 구성에 맞게 작성한다.
+GameVersion 연결은 구현하지 않았다. 공개 목록·상세 응답에도 writer를 노출하지 않는다. 관리자 공동 관리 세부 정책은 별도 `ADR018_Admin_Shared_Management_Policy.md`에 기록한다.
 
 ---
 
@@ -399,7 +389,7 @@ USER와 ADMIN은 권한을 나타내며, 회원의 정상 이용 여부와는 �
 
 게시글과 댓글 작성은 ACTIVE 상태의 로그인 회원만 가능하다.
 
-수정과 삭제는 작성자 본인 또는 관리자만 가능하다.
+수정은 작성자 본인만 가능하고 삭제는 작성자 본인 또는 ACTIVE ADMIN이 가능하다.
 
 ## 결정 이유
 - 커뮤니티 접근성을 높일 수 있다.
@@ -407,7 +397,7 @@ USER와 ADMIN은 권한을 나타내며, 회원의 정상 이용 여부와는 �
 - 작성자 권한과 관리자 운영 권한을 구분할 수 있다.
 
 ## 구현 후 보완
-관리자 삭제 방식과 응답 정책을 작성한다.
+Service가 매 쓰기 요청에서 최신 Member를 조회해 ACTIVE 상태를 확인한다. 관리자도 타 작성자의 게시글·댓글을 수정할 수는 없고 삭제만 할 수 있다.
 
 ---
 
@@ -422,7 +412,7 @@ USER와 ADMIN은 권한을 나타내며, 회원의 정상 이용 여부와는 �
 ## 예시
 - `/api/admin/members`
 - `/api/admin/news`
-- `/api/admin/versions`
+- `/api/admin/game-versions`
 - `/api/admin/download-statistics`
 
 ## 결정 이유
@@ -432,7 +422,7 @@ USER와 ADMIN은 권한을 나타내며, 회원의 정상 이용 여부와는 �
 
 ## 구현 후 보완
 Spring Security에서 `/api/admin/**`에 `hasRole("ADMIN")`을 적용한다.
-관리자 다운로드 통계 Controller는 `@AuthenticationPrincipal`의 memberId를 Service에 전달하고, Service는 DB에서 최신 Member를 조회하여 ACTIVE + ADMIN 상태를 다시 검증한다.
+Spring Security가 세션의 ADMIN 역할을 1차 검사하고 각 관리자 Service가 DB의 최신 ACTIVE + ADMIN을 2차 검사한다.
 
 ---
 
@@ -546,6 +536,57 @@ MVP에서는 서버 로컬 디렉터리에 게임 파일을 저장한다.
 - 직접 수정한 부분
 - AI 사용으로 단축된 작업
 - AI 사용이 적합하지 않았던 작업
+
+---
+
+# ADR-020. 세션 기반 통합 웹과 단일 EC2 Docker Compose 운영
+
+## 상태
+결정 및 배포 완료
+
+## 배경
+React UI, Spring Boot API, MySQL과 로컬 게임 파일을 실제로 운영하면서 인증 쿠키, SPA route, 내부 서비스 노출, DB와 파일 영속성을 일관되게 관리해야 한다.
+
+## 결정
+
+### 인증과 권한
+
+- Spring Security 세션 인증과 `JSESSIONID`를 사용한다.
+- `/api/members/**`는 회원 도메인(현재 signup), `/api/auth/**`는 login/logout/me 인증 생명주기로 분리한다.
+- `/api/auth/me`는 `memberId`, `loginId`, `nickname`, `role`만 반환해 React Context가 세션 상태를 복원한다.
+- `/api/admin/**`는 Spring Security `hasRole("ADMIN")`을 적용하고, 쓰기 및 운영 조회 Service는 DB의 최신 `ACTIVE + ADMIN`을 재검증한다.
+
+### Frontend
+
+- React, Vite, React Router를 사용하며 fetch API client는 `credentials: include`를 공통 적용한다.
+- `AdminRoute`는 인증 로딩 후 ADMIN만 관리자 UI에 진입시키는 UX guard다. 최종 권한 보장은 backend가 담당한다.
+- Nginx가 production 정적 파일을 제공하며 미일치 frontend 경로는 `/index.html`로 fallback한다.
+
+### 운영 구조
+
+- ap-northeast-2의 EC2 한 대에서 Docker Compose로 MySQL, Spring Boot, Nginx/React 세 컨테이너를 운영한다.
+- Elastic IP의 HTTP 80만 공개한다. backend 8080과 MySQL 3306은 내부 network에서만 사용하며 Nginx가 `/api/**`를 backend로 reverse proxy한다.
+- MySQL `/var/lib/mysql`은 named volume `mysql-data`, backend `/app/storage`는 EC2 host `./storage` bind mount로 영속화한다.
+- backend runtime은 non-root UID/GID 10001이다.
+- `SPRING_PROFILES_ACTIVE=prod`, 환경변수 datasource, `ddl-auto: validate`를 사용한다. `.env.prod`는 추적하지 않고 `.env.prod.example`만 제공한다.
+- 운영 schema는 현재 dump/import로 초기화하고 Flyway/Liquibase는 사용하지 않는다.
+
+## 이유
+
+- 같은 origin의 Nginx 진입점으로 세션 쿠키와 API 연결을 단순화한다.
+- 8080/3306을 외부에 공개하지 않고 HTTP 진입점을 하나로 제한한다.
+- 현재 트래픽과 운영 규모에서는 EC2 단일 서버가 충분하고 RDS/S3를 추가하지 않아 비용과 복잡도를 줄인다.
+- DB와 게임 파일의 서로 다른 영속성 요구를 named volume과 bind mount로 분리한다.
+
+## 검증 결과
+
+- 로컬 production Compose에서 healthcheck, `/api` proxy, SPA 직접 진입, ZIP 다운로드, `down`/`up` 후 DB/storage 복원을 확인했다.
+- AWS에서 Home, 로그인/API, ZIP, 관리자 기능과 Compose restart 후 데이터·파일 유지를 확인했다.
+- t3.micro 메모리 제약을 보완하기 위해 EC2 host에 2GB swap을 구성했다.
+
+## 현재 제외 범위
+
+HTTPS/도메인/Route53, RDS, S3, CDN, CI/CD와 GitHub Actions는 현재 구조에 포함하지 않는다.
 
 ---
 

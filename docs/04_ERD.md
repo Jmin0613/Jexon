@@ -37,7 +37,9 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 | login_id | VARCHAR(20) | N | UNIQUE | 로그인 아이디 |
 | password | VARCHAR(255) | N |  | 암호화된 비밀번호 |
 | nickname | VARCHAR(20) | N | UNIQUE | 닉네임 |
-| email | VARCHAR(100) | N | UNIQUE | 이메일 |
+| email | VARCHAR(255) | N | UNIQUE | 이메일 |
+| name | VARCHAR(60) | N |  | 이름 |
+| phone_number | VARCHAR(20) | N | UNIQUE | 전화번호 |
 | role | VARCHAR(20) | N |  | USER, ADMIN |
 | status | VARCHAR(20) | N |  | ACTIVE, SUSPENDED, WITHDRAWN |
 | created_at | DATETIME | N |  | 생성일 |
@@ -58,6 +60,7 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 - login_id UNIQUE
 - nickname UNIQUE
 - email UNIQUE
+- phone_number UNIQUE
 
 ---
 
@@ -70,10 +73,9 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 | 컬럼 | 타입 | NULL | 제약조건 | 설명 |
 |---|---|---:|---|---|
 | id | BIGINT | N | PK, AUTO_INCREMENT | 게시글 식별자 |
-| member_id | BIGINT | N | FK | 작성자 |
+| writer_id | BIGINT | N | FK | 작성자 |
 | title | VARCHAR(100) | N |  | 제목 |
 | content | TEXT | N |  | 내용 |
-| view_count | BIGINT | N | DEFAULT 0 | 조회 수 |
 | created_at | DATETIME | N |  | 작성일 |
 | updated_at | DATETIME | N |  | 수정일 |
 
@@ -82,9 +84,7 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 - Post 1:N Comment
 
 ### 인덱스
-- member_id
-- created_at
-- title
+Entity에는 별도 인덱스를 선언하지 않는다.
 
 ---
 
@@ -98,7 +98,7 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 |---|---|---:|---|---|
 | id | BIGINT | N | PK, AUTO_INCREMENT | 댓글 식별자 |
 | post_id | BIGINT | N | FK | 게시글 |
-| member_id | BIGINT | N | FK | 작성자 |
+| writer_id | BIGINT | N | FK | 작성자 |
 | content | VARCHAR(1000) | N |  | 댓글 내용 |
 | created_at | DATETIME | N |  | 작성일 |
 | updated_at | DATETIME | N |  | 수정일 |
@@ -108,9 +108,7 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 - Member N:1 Comment
 
 ### 인덱스
-- post_id
-- member_id
-- created_at
+Entity에는 별도 인덱스를 선언하지 않는다. MySQL은 FK 인덱스를 생성한다.
 
 ---
 
@@ -176,16 +174,15 @@ DownloadHistory는 Member와 관계를 맺지 않는다.
 ### 관계
 - GameVersion Entity에는 GameFile 필드를 추가하지 않는다.
 - GameFile이 GameVersion을 참조하는 LAZY 단방향 OneToOne 관계의 주인이다.
-- News와 DownloadHistory 관계는 각 도메인 구현 단계에서 검토한다.
+- DownloadHistory는 GameVersion을 필수 LAZY ManyToOne으로 참조한다.
+- News는 GameVersion과 관계가 없다.
 
 ### 제약조건
 - version UNIQUE
 - RELEASED 상태는 애플리케이션 정책상 최대 하나만 허용한다.
 
 ### 인덱스
-- version
-- status
-- released_at
+Entity에는 별도 인덱스를 선언하지 않는다. `version` UNIQUE 인덱스가 존재한다.
 
 ---
 
@@ -340,6 +337,8 @@ erDiagram
         VARCHAR password
         VARCHAR nickname UK
         VARCHAR email UK
+        VARCHAR name
+        VARCHAR phone_number UK
         VARCHAR role
         VARCHAR status
         DATETIME created_at
@@ -348,10 +347,9 @@ erDiagram
 
     POST {
         BIGINT id PK
-        BIGINT member_id FK
+        BIGINT writer_id FK
         VARCHAR title
         TEXT content
-        BIGINT view_count
         DATETIME created_at
         DATETIME updated_at
     }
@@ -359,7 +357,7 @@ erDiagram
     COMMENT {
         BIGINT id PK
         BIGINT post_id FK
-        BIGINT member_id FK
+        BIGINT writer_id FK
         VARCHAR content
         DATETIME created_at
         DATETIME updated_at
@@ -419,7 +417,7 @@ erDiagram
 
 ---
 
-## 13. 구현 전 확인 사항
+## 13. 향후 검토 사항
 - 게시글 조회 수 동시 증가 방식
 - 향후 GameFile 교체 및 삭제 정책
 - 실제 물리 파일 release 재검증 방식
